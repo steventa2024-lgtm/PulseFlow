@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
-import { listExecutions, listVersions, restoreVersion } from "../api";
+import { diffVersion, listExecutions, listVersions, restoreVersion } from "../api";
 import { useState } from "react";
 import { Button } from "@pulseflow/ui";
 
@@ -8,6 +8,7 @@ export function HistoryPage() {
   const executions = useQuery({ queryKey: ["executions"], queryFn: () => listExecutions() });
   const versions = useQuery({ queryKey: ["versions", "wf_a01"], queryFn: () => listVersions("wf_a01") });
   const [note, setNote] = useState("");
+  const [diffText, setDiffText] = useState("");
   return (
     <main className="mx-auto max-w-5xl p-6">
       <h1 className="text-2xl font-semibold">History</h1>
@@ -31,6 +32,27 @@ export function HistoryPage() {
             <Button
               type="button"
               onClick={() => {
+                void diffVersion("wf_a01", version.id)
+                  .then((result) => {
+                    const diff = result.diff;
+                    const lines = [
+                      `Added nodes: ${diff.nodesAdded.join(", ") || "none"}`,
+                      `Removed nodes: ${diff.nodesRemoved.join(", ") || "none"}`,
+                      `Changed nodes: ${diff.nodesChanged.join(", ") || "none"}`,
+                      `Added edges: ${diff.edgesAdded.join(", ") || "none"}`,
+                      `Removed edges: ${diff.edgesRemoved.join(", ") || "none"}`,
+                    ];
+                    setDiffText(lines.join("\n"));
+                    setNote(`Compared ${version.id} with the current draft`);
+                  })
+                  .catch((error: unknown) => setNote(error instanceof Error ? error.message : "Could not compare this version"));
+              }}
+            >
+              Compare
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
                 void restoreVersion("wf_a01", version.id).then(() => setNote(`Restored ${version.id} as a new draft version`));
               }}
             >
@@ -39,6 +61,7 @@ export function HistoryPage() {
           </li>
         ))}
       </ul>
+      {diffText && <pre className="mt-3 whitespace-pre-wrap rounded-xl border border-line bg-panel p-3 text-sm">{diffText}</pre>}
       {note && <p className="mt-3 text-sm text-muted">{note}</p>}
     </main>
   );

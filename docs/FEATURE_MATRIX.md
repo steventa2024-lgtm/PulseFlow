@@ -1,13 +1,13 @@
 # Feature matrix
 
-Status words: Implemented, Partial, Planned, Blocked. Counts for the rows below: Implemented 15, Partial 6, Planned 3, Blocked 1.
+Status words: Implemented, Partial, Planned, Blocked. Counts for the rows below: Implemented 16, Partial 6, Planned 2, Blocked 1.
 
 | Capability | Design | Implementation | Test | Status | Limitation |
 | --- | --- | --- | --- | --- | --- |
 | Visual editor | Dark studio, xyflow canvas | `apps/desktop/src/studio` | browser check in BUILD_PROGRESS | Implemented | 100-node run is an engine test, not a canvas frame-time measurement |
 | Unlimited local runs | No license check | engine + API | template catalog | Implemented | Hardware and provider quotas still apply |
 | Drafts and publish | Activate writes a version and schedules | `runtime.activate` | API activate test | Implemented | Deactivate clears schedules |
-| Version history and restore | Restore copies a snapshot into a new version | `POST /restore/:versionId` | API covered indirectly; UI restores A01 | Partial | Diff endpoint exists; UI diff is not drawn |
+| Version history and restore | Restore copies a snapshot into a new version | `POST /restore/:versionId` and History Compare | API covered indirectly; History lists added, removed, and changed ids | Partial | The comparison is a text list, not a side-by-side canvas |
 | Import and export | Bundle kind `pulseflow.bundle`, no secrets | API and CLI | `app.test.ts` import | Implemented | |
 | Expressions | Allow-list parser | `packages/engine/src/expr.ts` | `expr.test.ts` | Implemented | No user-defined functions |
 | Execution history | SQLite executions and steps | storage + console | engine 1000-row query; A01 API | Implemented | Measured under 2s for a 50-row page in the unit test, not a published benchmark |
@@ -17,7 +17,7 @@ Status words: Implemented, Partial, Planned, Blocked. Counts for the rows below:
 | Scheduling and DST | croner | `nextCronRun` | DST unit test | Implemented | Live clock fire is not a CI test |
 | Webhooks | HMAC over raw body | `POST /hooks/:id` | `app.test.ts` | Implemented | Local bind by default |
 | Credentials | AES-GCM, metadata GET | storage | `app.test.ts`, `security.test.ts` | Implemented | Key file, not OS keystore |
-| Subflows | Depth cap 5 | `logic.subworkflow` | node exists; no dedicated test | Partial | |
+| Subflows | Depth cap 5, parent cancellation, child graph check | `logic.subworkflow` | `engine.test.ts` child output, self-call stop, parent cancel | Implemented | Ready nodes still run one at a time |
 | Pins and debug | Pins apply only in debug mode | runner | `engine.test.ts` | Implemented | |
 | Templates A01–A16 | Real graphs | `packages/templates` | `catalog.test.ts` | Implemented | A11/A12/A15 use the fixture server |
 | Templates B01–B08 | Demo vs live | same | catalog demo loop; live 409 | Partial | Live provider calls are not certified |
@@ -27,5 +27,5 @@ Status words: Implemented, Partial, Planned, Blocked. Counts for the rows below:
 | Postgres and Redis adapters | optional | `postgres.query` dynamic import | none | Planned | Not installed |
 | Browser automation | demo HTML extract | `browser.extract` | B08 demo in catalog | Blocked | Live Playwright is not implemented |
 | Ollama | fixture or local HTTP | `ai.ollama` | B07 demo in catalog | Partial | No model required for the rest of the app |
-| Windows installer | electron-builder zip | `package:win` script | not run | Planned | Electron binary not downloaded here |
+| Windows installer | electron-builder zip, NSIS on Windows CI | `package:win` | Electron boot check and Linux launch of the same bundle; zip built here | Partial | `apps/desktop/release/PulseFlow-0.1.0-win.zip` was not executed on Windows. NSIS was not built here (no Wine). The package is unsigned and SmartScreen stays on |
 | Telemetry | off | settings default false | seed sets false | Implemented | No telemetry client exists |

@@ -20,9 +20,19 @@ Desktop shell:
 PULSEFLOW_DEV=1 pnpm dev:desktop
 ```
 
-That starts Vite and Electron. Electron downloads its binary on first install (`apps/desktop/node_modules/electron/install.js`). This environment did not complete that download, so the browser studio is the verified UI.
+That starts Vite and Electron against the TypeScript main file. Electron 44.7.0 is downloaded by `apps/desktop/node_modules/electron/install.js` on first install. Its Node is 24.21.0 and includes `node:sqlite`.
 
-Windows packaging is `pnpm package:win` after the Electron binary exists. It is not claimed to succeed here. An unsigned installer will be flagged by SmartScreen. Do not disable that check.
+Windows packaging:
+
+```bash
+pnpm package:win
+```
+
+That bundles the API and studio into `apps/desktop/dist-electron/main.mjs`, checks that Electron's Node can open SQLite and serve `/health`, then runs electron-builder. On Linux without Wine the result is `apps/desktop/release/PulseFlow-0.1.0-win.zip`. On Windows, or on Linux with Wine, the same command also builds the NSIS installer. The package is unsigned. Leave SmartScreen enabled.
+
+The desktop process stores SQLite, the key file, logs, and workflow files under `PULSEFLOW_HOME` or `%APPDATA%/PulseFlow/pulseflow`. Closing the window quits unless Settings has background execution turned on. Schedules do not run while the computer is asleep, hibernating, signed out, or powered off.
+
+`PULSEFLOW_DEV=1 pnpm dev:desktop` still uses Vite and the TypeScript main file. The packaged app does not use a development server or a system Node install.
 
 Troubleshooting:
 

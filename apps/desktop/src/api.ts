@@ -26,6 +26,7 @@ export interface WorkflowRecord {
   tags: string[];
   active: boolean;
   updatedAt: string;
+  currentPublishedVersionId?: string | null;
   draftGraph: WorkflowGraph;
 }
 
@@ -39,6 +40,7 @@ export interface ExecutionRecord {
   errorSummary: string | null;
   errorCode: string | null;
   triggerType: string;
+  mode?: string;
 }
 
 export interface StepRecord {
@@ -194,6 +196,18 @@ export function listVersions(id: string) {
 
 export function restoreVersion(workflowId: string, versionId: string) {
   return api(`/api/v1/workflows/${workflowId}/restore/${versionId}`, { method: "POST", body: "{}" });
+}
+
+export function diffVersion(workflowId: string, versionId: string) {
+  return api<{
+    diff: {
+      nodesAdded: string[];
+      nodesRemoved: string[];
+      nodesChanged: string[];
+      edgesAdded: string[];
+      edgesRemoved: string[];
+    };
+  }>(`/api/v1/workflows/${workflowId}/versions/${versionId}/diff`);
 }
 
 export function pinNode(workflowId: string, nodeId: string, data: unknown) {

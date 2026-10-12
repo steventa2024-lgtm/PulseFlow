@@ -41,3 +41,13 @@ Browser check on 2026-10-12 against `PULSEFLOW_HOME=/tmp/pulseflow-demo`:
 A React Query v5 issue blocked the first paint: `bootstrapSession` resolved to `undefined`, which Query rejects. It now returns `true`.
 
 `node scripts/license-audit.mjs` passed for 14 license groups. `pnpm pulseflow doctor` reported 24 workflows and telemetry false.
+
+## Phase 2 baseline and desktop package
+
+Recorded at `ab5eb86a35104b962d35e14cd81199680aeea4dc` before these changes. `pnpm typecheck`, eslint, `pnpm test` (24 tests), `pnpm test:templates` (10 tests), and `node scripts/license-audit.mjs` all exited 0.
+
+After the desktop and subflow changes, the same commands passed with 27 engine and API tests. `pnpm package:win` on this Linux machine wrote `apps/desktop/release/PulseFlow-0.1.0-win.zip` (about 148 MB). Electron's own Node ran the bundled server: `/health` returned ok and 24 workflows were present. A second launch of that bundle under Linux Electron served the studio HTML and JavaScript, ran template A01 in demo mode, wrote `hello-automation.json`, and left a checkpointed SQLite file after quit.
+
+The Windows `PulseFlow.exe` inside the zip was not started here. NSIS did not finish because Wine is absent. `.github/workflows/ci.yml` builds the zip and the installer on `windows-latest` and uploads them. The build sets `signAndEditExecutable` to false so the executable stays unsigned. SmartScreen is not disabled.
+
+Subflow execution now checks the child graph, stops a self-call at depth 5, and cancels the child when the parent is cancelled. The History page can compare a saved version with the current draft as lists of node and edge ids. The studio header shows Draft, Active, or Disabled, and labels a finished run as demo or live.

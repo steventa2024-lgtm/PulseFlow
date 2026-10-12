@@ -36,6 +36,20 @@ import { FlowCanvas } from "./FlowCanvas";
 import { Inspector } from "./Inspector";
 import { Library } from "./Library";
 
+function publicationState(active: boolean, published: boolean): "Active" | "Disabled" | "Draft" {
+  if (active) return "Active";
+  if (published) return "Disabled";
+  return "Draft";
+}
+
+function runStateLabel(status: string, state: string | undefined): string | undefined {
+  if (status === "Running" || state === "running" || state === "queued") return "Running";
+  if (state === "waiting") return "Paused";
+  if (state === "succeeded") return "Succeeded";
+  if (state === "failed" || state === "timed_out") return "Failed";
+  return undefined;
+}
+
 export function StudioPage({ tutorialDismissed }: { tutorialDismissed: boolean }) {
   const { workflowId = "wf_a01" } = useParams();
   const queryClient = useQueryClient();
@@ -182,7 +196,7 @@ export function StudioPage({ tutorialDismissed }: { tutorialDismissed: boolean }
 
   return (
     <div className="studio-grid">
-      <header className="studio-top flex items-center gap-3 border-b border-line bg-panel px-3">
+      <header className="studio-top flex items-center gap-3 overflow-x-auto border-b border-line bg-panel px-3">
         <Link to="/workflow/wf_a01" className="font-semibold">
           PulseFlow
         </Link>
@@ -198,6 +212,15 @@ export function StudioPage({ tutorialDismissed }: { tutorialDismissed: boolean }
           className="h-8 min-w-40 rounded-xl border border-line bg-canvas px-3 text-sm"
         />
         <span className="text-xs text-muted">{status}</span>
+        <span className="rounded-lg border border-line px-2 py-1 text-xs" aria-label="Workflow state">
+          {publicationState(active, Boolean(detail.data?.workflow.currentPublishedVersionId))}
+        </span>
+        {runStateLabel(status, execution?.state) && (
+          <span className="rounded-lg border border-line px-2 py-1 text-xs" aria-label="Run state">
+            {runStateLabel(status, execution?.state)}
+            {execution?.mode === "demo" ? " · demo" : execution?.mode === "live" ? " · live" : ""}
+          </span>
+        )}
         <nav className="ml-auto flex items-center gap-2">
           <Link className="text-sm text-muted" to="/templates">
             Templates
@@ -205,8 +228,11 @@ export function StudioPage({ tutorialDismissed }: { tutorialDismissed: boolean }
           <Link className="text-sm text-muted" to="/history">
             History
           </Link>
+          <Button type="button" onClick={() => void run("demo")}>
+            Run demo
+          </Button>
           <Button type="button" onClick={() => void run("production")}>
-            Test
+            Run
           </Button>
           <Button type="button" tone="primary" onClick={() => void toggleActive()}>
             {active ? "Deactivate" : "Activate"}
@@ -260,7 +286,7 @@ export function StudioPage({ tutorialDismissed }: { tutorialDismissed: boolean }
                 onClick={() => {
                   setBanner(false);
                   void patchSettings({ tutorialDismissed: true });
-                  void run("production");
+                  void run("demo");
                 }}
               >
                 Run demo

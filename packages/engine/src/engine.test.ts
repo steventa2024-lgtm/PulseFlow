@@ -241,4 +241,176 @@ describe("engine", () => {
     expect(queryMs).toBeLessThan(2_000);
     harness.close();
   });
+
+  it("runs a child workflow and returns its output", async () => {
+    const harness = createHarness();
+    const workspaceId = harness.store.getWorkflow("wf_a01")?.workspaceId;
+    if (!workspaceId) throw new Error("missing workspace");
+    harness.store.insertWorkflow({
+      id: "wf_child",
+      workspaceId,
+      name: "Child",
+      graph: {
+        schemaVersion: 1,
+        nodes: [
+          {
+            id: "manual",
+            manifestId: "trigger.manual",
+            manifestVersion: "1.0.0",
+            position: { x: 0, y: 0 },
+            parameters: {},
+          },
+          {
+            id: "set",
+            manifestId: "logic.set",
+            manifestVersion: "1.0.0",
+            position: { x: 200, y: 0 },
+            parameters: { mode: "merge", fields: [{ name: "greeting", value: "hello-child" }] },
+          },
+        ],
+        edges: [{ id: "e_manual_set", source: "manual", sourcePort: "out", target: "set", targetPort: "in" }],
+        settings: { concurrency: 1, interruptPolicy: "fail", timezone: "UTC" },
+      },
+    });
+    harness.store.insertWorkflow({
+      id: "wf_parent",
+      workspaceId,
+      name: "Parent",
+      graph: {
+        schemaVersion: 1,
+        nodes: [
+          {
+            id: "manual",
+            manifestId: "trigger.manual",
+            manifestVersion: "1.0.0",
+            position: { x: 0, y: 0 },
+            parameters: {},
+          },
+          {
+            id: "sub",
+            manifestId: "logic.subworkflow",
+            manifestVersion: "1.0.0",
+            position: { x: 200, y: 0 },
+            parameters: { workflowId: "wf_child" },
+          },
+        ],
+        edges: [{ id: "e_manual_sub", source: "manual", sourcePort: "out", target: "sub", targetPort: "in" }],
+        settings: { concurrency: 1, interruptPolicy: "fail", timezone: "UTC" },
+      },
+    });
+    const result = await harness.engine.runWorkflow("wf_parent");
+    expect(result.state).toBe("succeeded");
+    expect(result.outputs.sub?.[0]?.json).toMatchObject({ greeting: "hello-child" });
+    harness.close();
+  });
+
+  it("stops a workflow that calls itself", async () => {
+    const harness = createHarness();
+    const workspaceId = harness.store.getWorkflow("wf_a01")?.workspaceId;
+    if (!workspaceId) throw new Error("missing workspace");
+    harness.store.insertWorkflow({
+      id: "wf_loop",
+      workspaceId,
+      name: "Loop",
+      graph: {
+        schemaVersion: 1,
+        nodes: [
+          {
+            id: "manual",
+            manifestId: "trigger.manual",
+            manifestVersion: "1.0.0",
+            position: { x: 0, y: 0 },
+            parameters: {},
+          },
+          {
+            id: "sub",
+            manifestId: "logic.subworkflow",
+            manifestVersion: "1.0.0",
+            position: { x: 200, y: 0 },
+            parameters: { workflowId: "wf_loop" },
+          },
+        ],
+        edges: [{ id: "e_manual_sub", source: "manual", sourcePort: "out", target: "sub", targetPort: "in" }],
+        settings: { concurrency: 1, interruptPolicy: "fail", timezone: "UTC" },
+      },
+    });
+    const result = await harness.engine.runWorkflow("wf_loop");
+    expect(result.state).toBe("failed");
+    expect(result.error).toContain("recursion");
+    harness.close();
+  });
+
+  it("cancels a running subworkflow when the parent is cancelled", async () => {
+    const harness = createHarness();
+    const workspaceId = harness.store.getWorkflow("wf_a01")?.workspaceId;
+    if (!workspaceId) throw new Error("missing workspace");
+    harness.store.insertWorkflow({
+      id: "wf_child_wait",
+      workspaceId,
+      name: "Child wait",
+      graph: {
+        schemaVersion: 1,
+        nodes: [
+          {
+            id: "manual",
+            manifestId: "trigger.manual",
+            manifestVersion: "1.0.0",
+            position: { x: 0, y: 0 },
+            parameters: {},
+          },
+          {
+            id: "pause",
+            manifestId: "logic.wait",
+            manifestVersion: "1.0.0",
+            position: { x: 200, y: 0 },
+            parameters: { ms: 5_000, durable: false },
+          },
+        ],
+        edges: [{ id: "e_manual_pause", source: "manual", sourcePort: "out", target: "pause", targetPort: "in" }],
+        settings: { concurrency: 1, interruptPolicy: "fail", timezone: "UTC" },
+      },
+    });
+    harness.store.insertWorkflow({
+      id: "wf_parent_wait",
+      workspaceId,
+      name: "Parent wait",
+      graph: {
+        schemaVersion: 1,
+        nodes: [
+          {
+            id: "manual",
+            manifestId: "trigger.manual",
+            manifestVersion: "1.0.0",
+            position: { x: 0, y: 0 },
+            parameters: {},
+          },
+          {
+            id: "sub",
+            manifestId: "logic.subworkflow",
+            manifestVersion: "1.0.0",
+            position: { x: 200, y: 0 },
+            parameters: { workflowId: "wf_child_wait" },
+          },
+        ],
+        edges: [{ id: "e_manual_sub", source: "manual", sourcePort: "out", target: "sub", targetPort: "in" }],
+        settings: { concurrency: 1, interruptPolicy: "fail", timezone: "UTC" },
+      },
+    });
+    const pending = harness.engine.runWorkflow("wf_parent_wait");
+    let parentId = "";
+    let childId = "";
+    for (let attempt = 0; attempt < 50 && (!parentId || !childId); attempt += 1) {
+      const executions = harness.store.listExecutions({ limit: 20 });
+      parentId = executions.find((item) => item.workflowId === "wf_parent_wait")?.id ?? "";
+      childId = executions.find((item) => item.workflowId === "wf_child_wait")?.id ?? "";
+      if (!parentId || !childId) await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    expect(parentId).not.toBe("");
+    expect(childId).not.toBe("");
+    expect(harness.engine.cancel(parentId)).toBe(true);
+    const result = await pending;
+    expect(result.state).toBe("cancelled");
+    expect(harness.store.getExecution(childId)?.state).toBe("cancelled");
+    harness.close();
+  });
 });

@@ -3,12 +3,63 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "main": "dist-electron/main.mjs",
+  "author": "ZeroPulse",
+  "description": "Local-first workflow automation studio",
   "scripts": {
     "dev:web": "vite",
     "dev": "concurrently -n web,electron \"vite\" \"tsx electron/main.ts\"",
     "build": "vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.electron.json --noEmit",
-    "package:win": "vite build && electron-builder --win zip --x64"
+    "package:win": "node ../../scripts/build-desktop.mjs && node ../../scripts/package-win.mjs"
+  },
+  "build": {
+    "appId": "com.zeropulse.pulseflow",
+    "productName": "PulseFlow",
+    "copyright": "Copyright ZeroPulse",
+    "asar": true,
+    "npmRebuild": false,
+    "nodeGypRebuild": false,
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist-electron/**/*",
+      "package.json",
+      "!**/node_modules/**"
+    ],
+    "extraResources": [
+      {
+        "from": "dist",
+        "to": "ui"
+      },
+      {
+        "from": "build/icon.png",
+        "to": "icon.png"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "zip",
+          "arch": ["x64"]
+        },
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "PulseFlow"
+    }
   },
   "dependencies": {
     "@pulseflow/contracts": "workspace:*",

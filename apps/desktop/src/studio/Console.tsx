@@ -3,6 +3,13 @@ import type { ExecutionRecord, StepRecord } from "../api";
 
 const tabs = ["Timeline", "Node IO", "Logs", "Errors", "History"] as const;
 
+function stepDuration(step: StepRecord): string {
+  if (!step.startedAt || !step.endedAt) return "";
+  const ms = Date.parse(step.endedAt) - Date.parse(step.startedAt);
+  if (!Number.isFinite(ms) || ms < 0) return "";
+  return `${ms} ms`;
+}
+
 export function Console({
   execution,
   steps,
@@ -26,6 +33,11 @@ export function Console({
     <section className={`studio-console flex flex-col border-t border-line bg-panel ${collapsed ? "h-10" : ""}`}>
       <div className="flex h-10 items-center gap-2 px-3">
         <span className="text-xs font-semibold tracking-wide text-muted">EXECUTION CONSOLE</span>
+        {execution?.mode && (
+          <span className="rounded-lg bg-panel-2 px-2 py-1 text-xs text-ink">
+            {execution.mode === "demo" ? "Demo execution" : execution.mode === "live" ? "Live execution" : `${execution.mode} execution`}
+          </span>
+        )}
         {tabs.map((item) => (
           <button
             key={item}
@@ -51,8 +63,14 @@ export function Console({
               {steps.map((step) => (
                 <li key={step.id} className="grid grid-cols-[140px_120px_1fr] gap-2">
                   <span>{step.nodeId}</span>
-                  <span className={step.state === "failed" ? "text-[#FFB4B4]" : "text-ok"}>{step.state}</span>
-                  <span className="text-muted">{step.startedAt ?? ""}</span>
+                  <span className={step.state === "failed" ? "text-[#FFB4B4]" : "text-ok"}>
+                    {step.state}
+                    {step.attempt > 1 ? ` · attempt ${step.attempt}` : ""}
+                  </span>
+                  <span className="text-muted">
+                    {stepDuration(step)}
+                    {step.startedAt ? ` · ${step.startedAt}` : ""}
+                  </span>
                 </li>
               ))}
             </ol>
@@ -78,7 +96,7 @@ export function Console({
               {history.map((item) => (
                 <li key={item.id}>
                   <button type="button" className="text-left hover:text-accent" onClick={() => onOpenExecution(item.id)}>
-                    {item.queuedAt} · {item.state} · {item.id}
+                    {item.queuedAt} · {item.state}{item.mode ? ` · ${item.mode}` : ""} · {item.id}
                   </button>
                 </li>
               ))}

@@ -36,7 +36,7 @@ export function SettingsPage() {
               void patchSettings({ backgroundExecution: event.target.checked }).then(() => queryClient.invalidateQueries({ queryKey: ["settings"] }));
             }}
           />
-          Keep local schedules running when the window closes. The computer still has to stay on.
+          Keep local schedules running when the window closes. Sleep, hibernate, sign-out, and power-off still pause or stop them.
         </label>
       </section>
       <section className="rounded-2xl border border-line bg-panel p-4">

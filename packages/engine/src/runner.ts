@@ -170,6 +170,7 @@ export class WorkflowEngine {
     this.controllers.set(execution.id, controller);
     const onAbort = () => controller.abort();
     options.signal?.addEventListener("abort", onAbort);
+    if (options.signal?.aborted) controller.abort();
     const clock = this.options.clock ?? systemClock;
     try {
       this.store.addEvent(execution.id, "execution.started", { workflowId, mode: options.mode ?? "production" });
@@ -569,13 +570,23 @@ export class WorkflowEngine {
       respond,
       runSubworkflow: async (workflowId, childItems, depth) => {
         if (depth > 5) throw new FlowError("Subworkflow recursion limit reached", "RECURSION");
+        const child = this.store.getWorkflow(workflowId);
+        if (!child) throw new FlowError(`Workflow not found: ${workflowId}`, "NOT_FOUND");
+        const childValidation = validateGraph(child.draftGraph, this.registry);
+        if (!childValidation.ok) {
+          throw new FlowError(childValidation.errors.map((issue) => issue.message).join("; "), "INVALID_GRAPH");
+        }
         const result = await this.runWorkflow(workflowId, {
           payload: childItems.map((item) => item.json),
           mode: region.mode as RunOptions["mode"],
           triggerType: "subworkflow",
           depth,
           services: region.services,
+          signal: region.signal,
         });
+        if (region.signal.aborted || result.state === "cancelled") {
+          throw new FlowError(result.error ?? "Cancelled", "CANCELLED");
+        }
         if (result.state !== "succeeded") throw new FlowError(result.error ?? "Subworkflow failed", "SUBWORKFLOW");
         const terminal = Object.values(result.outputs).at(-1) ?? [];
         return terminal;

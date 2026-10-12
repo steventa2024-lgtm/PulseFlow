@@ -15,6 +15,8 @@ pnpm dev
 
 Open http://127.0.0.1:5173. The first screen is Hello Automation. **Run demo** executes the workflow and writes `hello-automation.json` under the demo folder in `PULSEFLOW_HOME` (default `./.pulseflow/demo`).
 
+![Hello Automation after a demo run](docs/screenshots/studio-demo.png)
+
 Other commands:
 
 ```bash
@@ -32,7 +34,7 @@ pnpm pulseflow run wf_a01
 
 ## What is not claimed
 
-- No Windows installer was built in the current environment. `pnpm package:win` is the intended command after the Electron binary is installed. Unsigned builds are subject to SmartScreen. Do not turn that warning off.
+- `pnpm package:win` writes an unsigned Windows x64 zip to `apps/desktop/release/PulseFlow-0.1.0-win.zip`. This environment built that zip and launched the same main bundle under Linux Electron. The Windows `.exe` was not started here. The NSIS installer is produced by the Windows CI job; Wine is required to build it on Linux. SmartScreen stays enabled.
 - Live GitHub, Discord, SMTP, Telegram, and spreadsheet calls need your own credentials and are subject to those providers' terms and prices.
 - There is no multi-user RBAC product yet. The database has tables for a later server mode.
 
