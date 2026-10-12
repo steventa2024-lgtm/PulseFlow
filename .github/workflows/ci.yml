@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify-linux:
+    name: verify (ubuntu)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+          cache: pnpm
+      - name: Install system packages for Electron under Xvfb
+        run: sudo apt-get update && sudo apt-get install -y xvfb libnss3 libatk-bridge2.0-0 libgtk-3-0 libgbm1 libasound2t64
+      - run: pnpm install --frozen-lockfile
+      - name: Release verification (all gates)
+        run: pnpm verify:release
+      - name: Upload verification artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-linux
+          path: |
+            artifacts/verification/
+            artifacts/screenshots/
+          if-no-files-found: warn
+
+  verify-windows:
+    name: verify + package (windows)
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Release verification (all gates + NSIS installer)
+        run: pnpm verify:release --package
+      - name: Upload verification artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-windows
+          path: |
+            artifacts/verification/
+            artifacts/screenshots/
+          if-no-files-found: warn
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: PulseFlow-Setup-windows
+          path: apps/desktop/release/PulseFlow-Setup-*.exe
+          if-no-files-found: error
