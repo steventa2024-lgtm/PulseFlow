@@ -310,7 +310,7 @@ export class WorkflowService {
       const target = path.resolve(templateDir, rel);
       if (!isWithin(target, templateDir)) throw new Error(`Template fixture escapes its folder: ${rel}`);
       fs.mkdirSync(path.dirname(target), { recursive: true });
-      fs.writeFileSync(target, content);
+      fs.writeFileSync(target, resolveDatePlaceholders(content, this.deps.clock.now()));
     }
     for (const v of tpl.variables) {
       if (v.kind === 'folder' && typeof v.default === 'string' && v.default.startsWith('${templateDir}')) {
@@ -349,6 +349,14 @@ export class WorkflowService {
     this.deps.store.audit.record(actor, 'template.instantiate', workflow.id, { template: tpl.id, demo: opts.demo === true, grants });
     return { workflow, templateDir, template: tpl };
   }
+}
+
+/** Fixture files may contain `${date:+N}` (local yyyy-MM-dd, N days from now) so samples stay current. */
+export function resolveDatePlaceholders(content: string, now: Date): string {
+  return content.replace(/\$\{date:([+-]?\d{1,4})\}/g, (_, n: string) => {
+    const d = new Date(now.getTime() + Number(n) * 86_400_000);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  });
 }
 
 export function localTimezone(): string {

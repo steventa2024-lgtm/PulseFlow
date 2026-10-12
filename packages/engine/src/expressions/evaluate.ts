@@ -158,7 +158,7 @@ export function evaluateExpression(src: string, scope: ExpressionScope): unknown
 }
 
 const TEMPLATE_RE = /\{\{([\s\S]+?)\}\}/g;
-const WHOLE_RE = /^\s*\{\{([\s\S]+?)\}\}\s*$/;
+const WHOLE_RE = /^\{\{([\s\S]+?)\}\}$/;
 
 export function hasExpression(value: unknown): boolean {
   return typeof value === 'string' && value.includes('{{') && /\{\{[\s\S]+?\}\}/.test(value);

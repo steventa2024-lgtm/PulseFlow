@@ -107,7 +107,7 @@ export const httpRequestNode = defineNode(
           { label: 'Text', value: 'text' },
         ],
       },
-      { name: 'failOnError', label: 'Fail on HTTP 4xx/5xx', type: 'boolean', default: true, noExpression: true },
+      { name: 'failOnError', label: 'Fail on HTTP 4xx/5xx', type: 'boolean', default: true, noExpression: true, description: 'When off, error statuses are returned as items, and timeouts/connection errors become items with status 0 (retried per item using the node retry policy).' },
       { name: 'timeoutMs', label: 'Timeout (ms)', type: 'number', default: 30_000, min: 100, max: 600_000, noExpression: true },
       { name: 'followRedirects', label: 'Follow redirects', type: 'boolean', default: true, noExpression: true },
       { name: 'maxResponseMb', label: 'Max response size (MB)', type: 'number', default: 10, min: 1, max: 500, noExpression: true },
@@ -155,20 +155,35 @@ export const httpRequestNode = defineNode(
       let url: string | null = baseUrl;
       let page = Number(query[ctx.param<string>('pageParam') || 'page'] ?? 1) || 1;
       for (let p = 0; p < maxPages && url; p++) {
-        const u = new URL(url);
+        const u: URL = new URL(url);
         if (p === 0 || pagination === 'page') for (const [k, v] of Object.entries(query)) u.searchParams.set(k, v);
         if (pagination === 'page') u.searchParams.set(ctx.param<string>('pageParam') || 'page', String(page));
-        const res = await ctx.services.http.request({
-          method,
-          url: u.toString(),
-          headers,
-          body,
-          timeoutMs: ctx.param<number>('timeoutMs'),
-          followRedirects: ctx.param<boolean>('followRedirects'),
-          maxResponseBytes: ctx.param<number>('maxResponseMb') * 1024 * 1024,
-          signal: ctx.signal,
-        });
-        if (ctx.param('failOnError')) throwForStatus(res, ctx.clock.now().getTime());
+        const send = (): Promise<HttpResponse> =>
+          ctx.services.http.request({
+            method,
+            url: u.toString(),
+            headers,
+            body,
+            timeoutMs: ctx.param<number>('timeoutMs'),
+            followRedirects: ctx.param<boolean>('followRedirects'),
+            maxResponseBytes: ctx.param<number>('maxResponseMb') * 1024 * 1024,
+            signal: ctx.signal,
+          });
+        const failOnError = ctx.param<boolean>('failOnError');
+        let res: HttpResponse;
+        if (failOnError) {
+          res = await send();
+          throwForStatus(res, ctx.clock.now().getTime());
+        } else {
+          // Report-style use: a transport failure for one item becomes a status-0 item instead of failing every item.
+          const attempt = await sendWithItemRetries(ctx, send);
+          if ('error' in attempt) {
+            ctx.log('warn', `${method} ${u.host}${u.pathname} failed: ${attempt.error.message}`);
+            out.push({ json: { status: 0, statusText: '', headers: {}, body: null, url: u.toString(), durationMs: null, error: attempt.error } });
+            break;
+          }
+          res = attempt.res;
+        }
         const parsed = parseBody(res, ctx.param<string>('responseFormat'));
         ctx.log('info', `${method} ${u.host}${u.pathname} → ${res.status} (${res.durationMs} ms)`);
         const splitPath = ctx.param<string>('splitPath');
@@ -196,6 +211,25 @@ export const httpRequestNode = defineNode(
     return { main: out };
   },
 );
+
+const TRANSPORT_ERRORS = new Set(['HTTP_TIMEOUT', 'HTTP_NETWORK_ERROR', 'DNS_FAILED']);
+
+async function sendWithItemRetries<T>(ctx: NodeExecutionContext, send: () => Promise<T>): Promise<{ res: T } | { error: { code: string; message: string } }> {
+  const policy = ctx.node.retry;
+  const attempts = Math.max(1, policy?.maxAttempts ?? 1);
+  let delay = policy?.initialDelayMs ?? 1000;
+  for (let n = 1; ; n++) {
+    try {
+      return { res: await send() };
+    } catch (e) {
+      if (!(e instanceof NodeError) || !TRANSPORT_ERRORS.has(e.code)) throw e;
+      if (n >= attempts) return { error: { code: e.code, message: e.message } };
+      ctx.log('warn', `Attempt ${n} failed (${e.message}); retrying in ${delay} ms`);
+      await ctx.clock.sleep(delay, ctx.signal);
+      delay = Math.min(policy?.maxDelayMs ?? 30_000, delay * (policy?.multiplier ?? 2));
+    }
+  }
+}
 
 export const webhookResponseNode = defineNode(
   {

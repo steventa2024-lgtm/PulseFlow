@@ -677,11 +677,11 @@ export const A14 = t({
   fixtures: {
     'tasks.json': `${JSON.stringify(
       [
-        { id: 1, title: 'Renew passport', due: '2026-01-07', done: false, priority: 'high' },
-        { id: 2, title: 'Pay electricity bill', due: '2026-01-05', done: false, priority: 'normal' },
-        { id: 3, title: 'Book dentist', due: '2026-02-20', done: false, priority: 'normal' },
-        { id: 4, title: 'Submit expense report', due: '2026-01-06', done: true, priority: 'normal' },
-        { id: 5, title: 'Call grandma', due: '2026-01-04', done: false, priority: 'normal' },
+        { id: 1, title: 'Renew passport', due: '${date:+2}', done: false, priority: 'high' },
+        { id: 2, title: 'Pay electricity bill', due: '${date:0}', done: false, priority: 'normal' },
+        { id: 3, title: 'Book dentist', due: '${date:+40}', done: false, priority: 'normal' },
+        { id: 4, title: 'Submit expense report', due: '${date:+1}', done: true, priority: 'normal' },
+        { id: 5, title: 'Call grandma', due: '${date:-1}', done: false, priority: 'normal' },
       ],
       null,
       2,

@@ -149,12 +149,24 @@ export const WorkflowCreateSchema = z.object({
   settings: WorkflowSettingsSchema.partial().optional(),
 });
 
+/** Every field optional and *without* defaults, so a patch never resets settings it does not mention. */
+export const SettingsPatchSchema = z.object({
+  timezone: z.string().min(1).max(64).optional(),
+  maxConcurrentRuns: z.number().int().min(1).max(64).optional(),
+  maxParallelNodes: z.number().int().min(1).max(32).optional(),
+  executionTimeoutMs: z.number().int().min(1000).max(7 * 86_400_000).optional(),
+  maxItemsPerNode: z.number().int().min(1).max(1_000_000).optional(),
+  errorWorkflowId: EntityIdSchema.optional(),
+  saveExecutionData: z.enum(['all', 'errors', 'none']).optional(),
+  variables: z.record(z.string().regex(/^[A-Za-z_][A-Za-z0-9_]{0,63}$/), VariableValueSchema).optional(),
+});
+
 export const WorkflowPatchSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   description: z.string().max(5000).optional(),
   tags: z.array(z.string().min(1).max(40)).max(30).optional(),
   draft: WorkflowGraphSchema.optional(),
-  settings: WorkflowSettingsSchema.omit({ permissions: true }).partial().optional(),
+  settings: SettingsPatchSchema.optional(),
   /** Optimistic concurrency guard: reject if the stored revision differs. */
   baseRevision: z.number().int().min(0).optional(),
 });

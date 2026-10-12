@@ -272,7 +272,7 @@ export const textNode = defineNode(
       if (op === 'lines') {
         t.split(/\r?\n/)
           .filter((l) => l.trim() !== '')
-          .forEach((line, n) => out.push({ json: { [target]: line, line: n + 1 } }));
+          .forEach((line, n) => out.push({ json: { lineNumber: n + 1, [target]: line } }));
         return;
       }
       const result =
