@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -27,6 +28,28 @@ export interface HostConfig {
   /** Max executions running at once across all workflows. */
   maxConcurrentExecutions: number;
 }
+
+export function buildConfig(overrides: Partial<HostConfig> & { dataDir?: string } = {}): HostConfig {
+  const dataDir = path.resolve(overrides.dataDir ?? defaultDataDir());
+  const mode = overrides.mode ?? (process.env.PULSEFLOW_MODE === 'server' ? 'server' : 'local');
+  return {
+    mode,
+    dataDir,
+    demoDir: overrides.demoDir ?? path.join(dataDir, 'demo'),
+    host: overrides.host ?? process.env.PULSEFLOW_HOST ?? '127.0.0.1',
+    port: overrides.port ?? Number(process.env.PULSEFLOW_PORT ?? 0),
+    masterKey: overrides.masterKey ?? loadOrCreateKeyFile(dataDir, () => crypto.randomBytes(32)),
+    localToken: overrides.localToken ?? process.env.PULSEFLOW_TOKEN ?? crypto.randomBytes(24).toString('base64url'),
+    ...(overrides.staticDir ? { staticDir: overrides.staticDir } : {}),
+    fixtures: overrides.fixtures ?? (process.env.PULSEFLOW_FIXTURES ? process.env.PULSEFLOW_FIXTURES !== '0' : mode === 'local'),
+    ...(overrides.publicUrl ?? process.env.PULSEFLOW_PUBLIC_URL ? { publicUrl: overrides.publicUrl ?? process.env.PULSEFLOW_PUBLIC_URL } : {}),
+    appVersion: overrides.appVersion ?? APP_VERSION,
+    logLevel: overrides.logLevel ?? 'info',
+    maxConcurrentExecutions: overrides.maxConcurrentExecutions ?? 4,
+  };
+}
+
+export const APP_VERSION = '0.1.0';
 
 export function defaultDataDir(): string {
   if (process.env.PULSEFLOW_DATA_DIR) return path.resolve(process.env.PULSEFLOW_DATA_DIR);

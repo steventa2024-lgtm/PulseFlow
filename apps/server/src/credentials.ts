@@ -56,9 +56,9 @@ export class CredentialService {
     }
   }
 
-  create(input: { name: string; type: string; data: Record<string, string> }): CredentialMeta {
+  create(input: { name: string; type: string; data: Record<string, string>; id?: string }): CredentialMeta {
     this.#validate(input.type, input.data);
-    const id = newId('cred');
+    const id = input.id ?? newId('cred');
     this.store.credentials.create({
       id,
       workspace_id: this.workspaceId,

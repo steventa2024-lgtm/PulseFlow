@@ -226,6 +226,12 @@ export class ExecutionService {
     };
   }
 
+  /** Exact (unredacted) step outputs, for host-internal use such as webhook responses. Never sent to the UI. */
+  rawOutputs(executionId: string): Record<string, Record<string, Item[]>> {
+    const rec = this.deps.store.executions.get(executionId);
+    return rec ? this.deps.store.steps.rawOutputs(rec.id, this.#decode(rec)) : {};
+  }
+
   #decode(rec: ExecutionRecord) {
     return (stored: string) => (stored.startsWith('enc:') ? this.deps.box.decrypt(stored.slice(4), rec.id) : stored);
   }
