@@ -1,0 +1,112 @@
+@import "tailwindcss";
+@source ".";
+@source "../../../packages/ui/src";
+
+@theme {
+  --color-canvas: #0b0f16;
+  --color-panel: #101722;
+  --color-panel-2: #151f2d;
+  --color-ink: #e8eef7;
+  --color-muted: #93a0b4;
+  --color-line: #243044;
+  --color-accent: #3b82f6;
+  --color-cyan: #22d3ee;
+  --color-warn: #f5b942;
+  --color-ok: #3ddc97;
+  --font-sans: "Segoe UI", "SF Pro Text", "Helvetica Neue", sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.studio-grid {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr) 320px;
+  grid-template-rows: 48px minmax(0, 1fr) 220px;
+  height: 100%;
+}
+
+.studio-top {
+  grid-column: 1 / -1;
+}
+
+.studio-console {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 1366px) {
+  .studio-grid {
+    grid-template-columns: 220px minmax(0, 1fr) 280px;
+  }
+}
+
+@media (max-width: 1280px) {
+  .studio-grid {
+    grid-template-columns: 200px minmax(0, 1fr) 240px;
+    grid-template-rows: 48px minmax(0, 1fr) 168px;
+  }
+}
+
+.pulse-node {
+  min-width: 168px;
+  border: 1px solid var(--color-line);
+  background: #121a27;
+  border-radius: 12px;
+  padding: 10px 12px;
+  color: var(--color-ink);
+}
+
+.pulse-node.selected {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+.pulse-node.status-succeeded {
+  border-color: #1f7a55;
+}
+
+.pulse-node.status-failed,
+.pulse-node.status-timed_out {
+  border-color: #a34b55;
+}
+
+.pulse-node.status-running,
+.pulse-node.status-retrying {
+  border-color: var(--color-accent);
+}
+
+.pulse-node.status-skipped {
+  opacity: 0.55;
+}
+
+.react-flow__attribution {
+  background: transparent !important;
+  color: var(--color-muted) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "@pulseflow/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
+    "build": "esbuild src/main.ts --bundle --platform=node --format=esm --outfile=dist/server.mjs --packages=external",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@fastify/cors": "11.3.1",
+    "@fastify/static": "10.1.6",
+    "@pulseflow/connectors": "workspace:*",
+    "@pulseflow/contracts": "workspace:*",
+    "@pulseflow/engine": "workspace:*",
+    "@pulseflow/security": "workspace:*",
+    "@pulseflow/storage": "workspace:*",
+    "@pulseflow/templates": "workspace:*",
+    "fastify": "5.12.5"
+  }
+}

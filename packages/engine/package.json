@@ -1,0 +1,23 @@
+{
+  "name": "@pulseflow/engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@pulseflow/connectors": "workspace:*",
+    "@pulseflow/contracts": "workspace:*",
+    "@pulseflow/nodes-core": "workspace:*",
+    "@pulseflow/security": "workspace:*",
+    "@pulseflow/storage": "workspace:*",
+    "croner": "10.0.1"
+  },
+  "devDependencies": {
+    "@pulseflow/testing": "workspace:*"
+  }
+}

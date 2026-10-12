@@ -1,0 +1,16 @@
+services:
+  pulseflow:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    ports:
+      - "127.0.0.1:8787:8787"
+    environment:
+      PULSEFLOW_HOME: /data
+      PULSEFLOW_HOST: 0.0.0.0
+      PULSEFLOW_ALLOW_REMOTE: "1"
+    volumes:
+      - pulseflow-data:/data
+
+volumes:
+  pulseflow-data:

@@ -1,0 +1,20 @@
+{
+  "name": "@pulseflow/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/main.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@pulseflow/contracts": "workspace:*",
+    "@pulseflow/engine": "workspace:*",
+    "@pulseflow/security": "workspace:*",
+    "@pulseflow/server": "workspace:*",
+    "@pulseflow/storage": "workspace:*",
+    "@pulseflow/templates": "workspace:*"
+  }
+}

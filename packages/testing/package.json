@@ -1,0 +1,18 @@
+{
+  "name": "@pulseflow/testing",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@pulseflow/contracts": "workspace:*",
+    "@pulseflow/engine": "workspace:*",
+    "@pulseflow/storage": "workspace:*",
+    "@pulseflow/templates": "workspace:*"
+  }
+}

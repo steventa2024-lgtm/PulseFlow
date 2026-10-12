@@ -1,0 +1,16 @@
+node_modules/
+dist/
+dist-electron/
+release/
+out/
+.pulseflow/
+*.db
+*.db-wal
+*.db-shm
+artifacts/
+coverage/
+playwright-report/
+test-results/
+*.log
+.DS_Store
+.vite/

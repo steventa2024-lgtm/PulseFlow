@@ -1,0 +1,18 @@
+PulseFlow
+Copyright 2026 ZeroPulse
+
+This product includes software developed under the following licenses.
+See docs/LICENSE_AUDIT.md for the inventory generated from the lockfile.
+
+- Electron, MIT, https://github.com/electron/electron
+- React, MIT, https://github.com/facebook/react
+- Vite, MIT, https://github.com/vitejs/vite
+- @xyflow/react, MIT, https://github.com/xyflow/xyflow
+- Fastify, MIT, https://github.com/fastify/fastify
+- Zod, MIT, https://github.com/colinhacks/zod
+- Tailwind CSS, MIT, https://github.com/tailwindlabs/tailwindcss
+- Lucide, ISC, https://github.com/lucide-icons/lucide
+- croner, MIT, https://github.com/Hexagon/croner
+- nodemailer, MIT-0, https://github.com/nodemailer/nodemailer
+
+PulseFlow does not include n8n source. n8n's Sustainable Use License is not an OSI open-source license and is not a dependency of this repository.
