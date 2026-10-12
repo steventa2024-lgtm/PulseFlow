@@ -37,7 +37,11 @@ function validateExpressionsDeep(value: unknown, report: (msg: string) => void, 
 }
 
 /** Static validation used by the editor, publish, and before every run. */
-export function validateGraph(input: unknown, registry: NodeRegistry, options: { requireTrigger?: boolean } = {}): ValidationResult & { compiled?: CompiledGraph } {
+export function validateGraph(
+  input: unknown,
+  registry: NodeRegistry,
+  options: { requireTrigger?: boolean } = {},
+): ValidationResult & { compiled?: CompiledGraph } {
   const issues: ValidationIssue[] = [];
   const parsed = WorkflowGraphSchema.safeParse(input);
   if (!parsed.success) {
@@ -91,7 +95,13 @@ export function validateGraph(input: unknown, registry: NodeRegistry, options: {
           param: p.name,
         });
       } else if (p.type === 'select' && p.options && !p.options.some((o) => o.value === v)) {
-        issues.push({ severity: 'error', code: 'PARAM_OPTION', message: `${node.name}: "${p.label}" has invalid value "${String(v)}"`, nodeId: node.id, param: p.name });
+        issues.push({
+          severity: 'error',
+          code: 'PARAM_OPTION',
+          message: `${node.name}: "${p.label}" has invalid value "${String(v)}"`,
+          nodeId: node.id,
+          param: p.name,
+        });
       } else if (p.type === 'boolean' && typeof v !== 'boolean') {
         issues.push({ severity: 'error', code: 'PARAM_TYPE', message: `${node.name}: "${p.label}" must be true/false`, nodeId: node.id, param: p.name });
       } else if (p.type === 'credential' && p.required && !(node.credentials?.[p.name] ?? (typeof v === 'string' ? v : undefined))) {

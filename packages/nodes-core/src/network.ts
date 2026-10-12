@@ -26,7 +26,8 @@ export function kvListToRecord(list: unknown): Record<string, string> {
   for (const entry of list as { name?: unknown; value?: unknown }[]) {
     if (!entry || typeof entry.name !== 'string' || !entry.name.trim()) continue;
     const name = entry.name.trim();
-    if (/[\r\n]/.test(name) || /[\r\n]/.test(String(entry.value ?? ''))) throw new NodeError('INVALID_HEADER', `Header/parameter "${name}" contains a line break`);
+    if (/[\r\n]/.test(name) || /[\r\n]/.test(String(entry.value ?? '')))
+      throw new NodeError('INVALID_HEADER', `Header/parameter "${name}" contains a line break`);
     out[name] = entry.value === undefined || entry.value === null ? '' : typeof entry.value === 'object' ? JSON.stringify(entry.value) : String(entry.value);
   }
   return out;
@@ -94,7 +95,13 @@ export const httpRequestNode = defineNode(
       },
       { name: 'body', label: 'Body content', type: 'text', default: '{{ $json }}', showIf: { param: 'bodyMode', equals: ['json', 'text'] } },
       { name: 'formFields', label: 'Form fields', type: 'keyvalue', default: [], showIf: { param: 'bodyMode', equals: ['form'] } },
-      { name: 'credential', label: 'Authentication', type: 'credential', credentialType: 'httpBasic,httpBearer,httpHeader,githubToken', description: 'Optional. Credentials are never stored in workflow files or logs.' },
+      {
+        name: 'credential',
+        label: 'Authentication',
+        type: 'credential',
+        credentialType: 'httpBasic,httpBearer,httpHeader,githubToken',
+        description: 'Optional. Credentials are never stored in workflow files or logs.',
+      },
       {
         name: 'responseFormat',
         label: 'Response format',
@@ -107,7 +114,15 @@ export const httpRequestNode = defineNode(
           { label: 'Text', value: 'text' },
         ],
       },
-      { name: 'failOnError', label: 'Fail on HTTP 4xx/5xx', type: 'boolean', default: true, noExpression: true, description: 'When off, error statuses are returned as items, and timeouts/connection errors become items with status 0 (retried per item using the node retry policy).' },
+      {
+        name: 'failOnError',
+        label: 'Fail on HTTP 4xx/5xx',
+        type: 'boolean',
+        default: true,
+        noExpression: true,
+        description:
+          'When off, error statuses are returned as items, and timeouts/connection errors become items with status 0 (retried per item using the node retry policy).',
+      },
       { name: 'timeoutMs', label: 'Timeout (ms)', type: 'number', default: 30_000, min: 100, max: 600_000, noExpression: true },
       { name: 'followRedirects', label: 'Follow redirects', type: 'boolean', default: true, noExpression: true },
       { name: 'maxResponseMb', label: 'Max response size (MB)', type: 'number', default: 10, min: 1, max: 500, noExpression: true },
@@ -124,10 +139,33 @@ export const httpRequestNode = defineNode(
           { label: 'Link header (rel="next")', value: 'linkHeader' },
         ],
       },
-      { name: 'nextUrlField', label: 'Next URL field', type: 'string', default: 'next', noExpression: true, showIf: { param: 'pagination', equals: ['nextUrl'] } },
+      {
+        name: 'nextUrlField',
+        label: 'Next URL field',
+        type: 'string',
+        default: 'next',
+        noExpression: true,
+        showIf: { param: 'pagination', equals: ['nextUrl'] },
+      },
       { name: 'pageParam', label: 'Page parameter', type: 'string', default: 'page', noExpression: true, showIf: { param: 'pagination', equals: ['page'] } },
-      { name: 'maxPages', label: 'Max pages', type: 'number', default: 10, min: 1, max: 1000, noExpression: true, showIf: { param: 'pagination', equals: ['nextUrl', 'page', 'linkHeader'] } },
-      { name: 'splitPath', label: 'Split list at path into items (optional)', type: 'string', default: '', noExpression: true, description: 'e.g. "data" or "." for a top-level list' },
+      {
+        name: 'maxPages',
+        label: 'Max pages',
+        type: 'number',
+        default: 10,
+        min: 1,
+        max: 1000,
+        noExpression: true,
+        showIf: { param: 'pagination', equals: ['nextUrl', 'page', 'linkHeader'] },
+      },
+      {
+        name: 'splitPath',
+        label: 'Split list at path into items (optional)',
+        type: 'string',
+        default: '',
+        noExpression: true,
+        description: 'e.g. "data" or "." for a top-level list',
+      },
     ],
   },
   async (ctx) => {
@@ -337,7 +375,13 @@ export const httpDownloadNode = defineNode(
       const url = requireString(ctx.param('url', i), 'URL');
       const dest = requireString(ctx.param('path', i), 'Save as');
       ctx.services.fs.resolveWrite(dest);
-      const res = await ctx.services.http.request({ method: 'GET', url, timeoutMs: 120_000, maxResponseBytes: ctx.param<number>('maxMb') * 1024 * 1024, signal: ctx.signal });
+      const res = await ctx.services.http.request({
+        method: 'GET',
+        url,
+        timeoutMs: 120_000,
+        maxResponseBytes: ctx.param<number>('maxMb') * 1024 * 1024,
+        signal: ctx.signal,
+      });
       throwForStatus(res, ctx.clock.now().getTime());
       const written = await ctx.services.fs.writeBytes(dest, res.body, { overwrite: ctx.param<boolean>('overwrite') });
       out.push({ json: { ...ctx.items[i]!.json, url, file: written, contentType: res.headers['content-type'] ?? null } });

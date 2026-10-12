@@ -1,5 +1,14 @@
 import { applyEdgeChanges, applyNodeChanges, type Edge as RFEdge, type EdgeChange, type Node as RFNode, type NodeChange } from '@xyflow/react';
-import { getNodeOutputsWithError, newId, type NodeCatalogEntry, type NodeInstance, type StepState, type Workflow, type WorkflowGraph, type WorkflowSettings } from '@pulseflow/contracts';
+import {
+  getNodeOutputsWithError,
+  newId,
+  type NodeCatalogEntry,
+  type NodeInstance,
+  type StepState,
+  type Workflow,
+  type WorkflowGraph,
+  type WorkflowSettings,
+} from '@pulseflow/contracts';
 import { create } from 'zustand';
 
 export type FlowNodeData = { instance: NodeInstance };
@@ -131,7 +140,11 @@ export const useEditor = create<EditorState>((set, get) => {
       if (dragEnd) dragOrigin = null;
       let nodes = applyNodeChanges(changes, get().nodes);
       // Keep the instance position in sync so graph() reflects drags.
-      nodes = nodes.map((n) => (n.data.instance.position.x === n.position.x && n.data.instance.position.y === n.position.y ? n : { ...n, data: { instance: { ...n.data.instance, position: { x: Math.round(n.position.x), y: Math.round(n.position.y) } } } }));
+      nodes = nodes.map((n) =>
+        n.data.instance.position.x === n.position.x && n.data.instance.position.y === n.position.y
+          ? n
+          : { ...n, data: { instance: { ...n.data.instance, position: { x: Math.round(n.position.x), y: Math.round(n.position.y) } } } },
+      );
       const edges = removed.size ? get().edges.filter((e) => !removed.has(e.source) && !removed.has(e.target)) : get().edges;
       if (structural) set((s) => ({ nodes, edges, past: [...s.past, prev].slice(-HISTORY_LIMIT), future: [], dirty: true }));
       else set({ nodes, edges, ...(changes.some((c) => c.type === 'position') ? { dirty: true } : {}) });
@@ -208,11 +221,20 @@ export const useEditor = create<EditorState>((set, get) => {
       if (!next) return;
       set({ nodes: next.nodes, edges: next.edges, future: s.future.slice(1), past: [...s.past, { nodes: s.nodes, edges: s.edges }], dirty: true });
     },
-    selectedIds: () => get().nodes.filter((n) => n.selected).map((n) => n.id),
+    selectedIds: () =>
+      get()
+        .nodes.filter((n) => n.selected)
+        .map((n) => n.id),
     graph: () => ({
       schemaVersion: 1,
       nodes: get().nodes.map((n) => ({ ...n.data.instance, position: { x: Math.round(n.position.x), y: Math.round(n.position.y) } })),
-      edges: get().edges.map((e) => ({ id: e.id, source: e.source, sourcePort: e.sourceHandle ?? 'main', target: e.target, targetPort: e.targetHandle ?? 'main' })),
+      edges: get().edges.map((e) => ({
+        id: e.id,
+        source: e.source,
+        sourcePort: e.sourceHandle ?? 'main',
+        target: e.target,
+        targetPort: e.targetHandle ?? 'main',
+      })),
     }),
     setExecution: (id) => set({ executionId: id, runStates: {} }),
     setRunState: (nodeId, s) =>

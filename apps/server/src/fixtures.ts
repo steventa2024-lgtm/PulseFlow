@@ -30,7 +30,10 @@ function feedXml(variant: number, base: string): string {
   ].slice(0, variant >= 2 ? 4 : 3);
   const items = entries
     .reverse()
-    .map((e) => `<item><guid isPermaLink="false">${e.id}</guid><title>${e.title}</title><link>${base}/articles/${e.id}</link><pubDate>${new Date(`2026-01-${e.day}T08:00:00Z`).toUTCString()}</pubDate><description>Sample article ${e.id}</description></item>`)
+    .map(
+      (e) =>
+        `<item><guid isPermaLink="false">${e.id}</guid><title>${e.title}</title><link>${base}/articles/${e.id}</link><pubDate>${new Date(`2026-01-${e.day}T08:00:00Z`).toUTCString()}</pubDate><description>Sample article ${e.id}</description></item>`,
+    )
     .join('');
   return `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>PulseFlow Demo Feed</title><link>${base}</link><description>${DEMO_NOTICE}</description>${items}</channel></rss>`;
 }
@@ -55,7 +58,13 @@ const ISSUES = [
   { number: 43, title: 'How do I schedule a workflow?', body: 'Question about cron syntax' },
   { number: 44, title: 'README typo in install section', body: 'Docs: "pnmp" should be "pnpm"' },
   { number: 45, title: 'Pull request: fix typo', body: '', pull_request: { url: 'x' } },
-].map((i) => ({ ...i, id: 5000 + i.number, state: 'open', html_url: `https://example.invalid/pulseflow-demo/sample/issues/${i.number}`, created_at: '2026-01-05T10:00:00Z' }));
+].map((i) => ({
+  ...i,
+  id: 5000 + i.number,
+  state: 'open',
+  html_url: `https://example.invalid/pulseflow-demo/sample/issues/${i.number}`,
+  created_at: '2026-01-05T10:00:00Z',
+}));
 
 function page<T>(list: T[], query: Record<string, string | undefined>, url: string): { items: T[]; link?: string } {
   const per = Math.max(1, Math.min(100, Number(query.per_page ?? 30)));
@@ -101,7 +110,10 @@ function fakeOllama(prompt: string): string {
 }
 
 export function registerFixtures(app: FastifyInstance, state: FixtureState, baseUrl: () => string): void {
-  app.get('/demo', async () => ({ notice: DEMO_NOTICE, endpoints: ['monitor', 'feed.xml', 'api/health', 'api/slow', 'api/error', 'flaky', 'github', 'discord', 'telegram', 'sheets', 'ollama', 'smtp'] }));
+  app.get('/demo', async () => ({
+    notice: DEMO_NOTICE,
+    endpoints: ['monitor', 'feed.xml', 'api/health', 'api/slow', 'api/error', 'flaky', 'github', 'discord', 'telegram', 'sheets', 'ollama', 'smtp'],
+  }));
 
   app.get('/demo/monitor', async (_req, reply) => {
     reply.code(state.monitorStatus).type('text/html');
@@ -148,7 +160,12 @@ export function registerFixtures(app: FastifyInstance, state: FixtureState, base
     if (link) reply.header('link', link);
     return items;
   });
-  app.get<{ Params: { owner: string; repo: string } }>('/demo/github/repos/:owner/:repo', async (req) => ({ full_name: `${req.params.owner}/${req.params.repo}`, description: DEMO_NOTICE, stargazers_count: 42, open_issues_count: ISSUES.length }));
+  app.get<{ Params: { owner: string; repo: string } }>('/demo/github/repos/:owner/:repo', async (req) => ({
+    full_name: `${req.params.owner}/${req.params.repo}`,
+    description: DEMO_NOTICE,
+    stargazers_count: 42,
+    open_issues_count: ISSUES.length,
+  }));
 
   app.post<{ Body: { content?: string; username?: string } }>('/demo/discord/webhook', async (req, reply) => {
     const content = String(req.body?.content ?? '');
@@ -161,24 +178,38 @@ export function registerFixtures(app: FastifyInstance, state: FixtureState, base
 
   app.post<{ Params: { bot: string }; Body: { chat_id?: string; text?: string } }>('/demo/telegram/:bot/sendMessage', async (req, reply) => {
     if (req.params.bot !== 'botdemo-token') return reply.code(401).send({ ok: false, error_code: 401, description: 'Unauthorized' });
-    if (!req.body?.chat_id || !req.body.text) return reply.code(400).send({ ok: false, error_code: 400, description: 'Bad Request: chat_id and text are required' });
+    if (!req.body?.chat_id || !req.body.text)
+      return reply.code(400).send({ ok: false, error_code: 400, description: 'Bad Request: chat_id and text are required' });
     state.telegram.push({ chatId: String(req.body.chat_id), text: String(req.body.text), at: new Date().toISOString() });
     return { ok: true, result: { message_id: state.telegram.length, chat: { id: Number(req.body.chat_id) || 0 }, text: req.body.text } };
   });
   app.get('/demo/telegram/messages', async () => state.telegram);
 
-  app.post<{ Params: { id: string; '*': string }; Querystring: { valueInputOption?: string }; Body: { values?: unknown[][] } }>('/demo/sheets/v4/spreadsheets/:id/values/*', async (req, reply) => {
-    const rangeAction = decodeURIComponent(req.params['*']);
-    if (!rangeAction.endsWith(':append')) return reply.code(404).send({ error: { code: 404, message: 'Unknown method' } });
-    if (req.query.valueInputOption !== 'RAW' && req.query.valueInputOption !== 'USER_ENTERED') return reply.code(400).send({ error: { code: 400, message: 'valueInputOption is required' } });
-    const values = req.body?.values;
-    if (!Array.isArray(values) || !values.every(Array.isArray)) return reply.code(400).send({ error: { code: 400, message: 'values must be a 2D array' } });
-    const rows = state.sheets.get(req.params.id) ?? [];
-    rows.push(...values);
-    state.sheets.set(req.params.id, rows);
-    const sheet = rangeAction.split('!')[0];
-    return { spreadsheetId: req.params.id, tableRange: `${sheet}!A1:D${rows.length - values.length}`, updates: { spreadsheetId: req.params.id, updatedRange: `${sheet}!A${rows.length - values.length + 1}:D${rows.length}`, updatedRows: values.length, updatedCells: values.flat().length } };
-  });
+  app.post<{ Params: { id: string; '*': string }; Querystring: { valueInputOption?: string }; Body: { values?: unknown[][] } }>(
+    '/demo/sheets/v4/spreadsheets/:id/values/*',
+    async (req, reply) => {
+      const rangeAction = decodeURIComponent(req.params['*']);
+      if (!rangeAction.endsWith(':append')) return reply.code(404).send({ error: { code: 404, message: 'Unknown method' } });
+      if (req.query.valueInputOption !== 'RAW' && req.query.valueInputOption !== 'USER_ENTERED')
+        return reply.code(400).send({ error: { code: 400, message: 'valueInputOption is required' } });
+      const values = req.body?.values;
+      if (!Array.isArray(values) || !values.every(Array.isArray)) return reply.code(400).send({ error: { code: 400, message: 'values must be a 2D array' } });
+      const rows = state.sheets.get(req.params.id) ?? [];
+      rows.push(...values);
+      state.sheets.set(req.params.id, rows);
+      const sheet = rangeAction.split('!')[0];
+      return {
+        spreadsheetId: req.params.id,
+        tableRange: `${sheet}!A1:D${rows.length - values.length}`,
+        updates: {
+          spreadsheetId: req.params.id,
+          updatedRange: `${sheet}!A${rows.length - values.length + 1}:D${rows.length}`,
+          updatedRows: values.length,
+          updatedCells: values.flat().length,
+        },
+      };
+    },
+  );
   app.get<{ Params: { id: string } }>('/demo/sheets/rows/:id', async (req) => state.sheets.get(req.params.id) ?? []);
 
   app.post<{ Body: { model?: string; prompt?: string } }>('/demo/ollama/api/generate', async (req, reply) => {

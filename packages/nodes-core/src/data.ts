@@ -24,8 +24,22 @@ export const jsonNode = defineNode(
           { label: 'Stringify data → text', value: 'stringify' },
         ],
       },
-      { name: 'source', label: 'Source field', type: 'string', default: 'text', noExpression: true, description: 'Field to read. Use "." for the whole item (stringify only).' },
-      { name: 'target', label: 'Target field', type: 'string', default: 'data', noExpression: true, description: 'Use "." to replace the whole item with the parsed object (parse only).' },
+      {
+        name: 'source',
+        label: 'Source field',
+        type: 'string',
+        default: 'text',
+        noExpression: true,
+        description: 'Field to read. Use "." for the whole item (stringify only).',
+      },
+      {
+        name: 'target',
+        label: 'Target field',
+        type: 'string',
+        default: 'data',
+        noExpression: true,
+        description: 'Use "." to replace the whole item with the parsed object (parse only).',
+      },
       { name: 'pretty', label: 'Pretty print', type: 'boolean', default: true, noExpression: true, showIf: { param: 'operation', equals: ['stringify'] } },
     ],
   },
@@ -81,9 +95,30 @@ export const csvNode = defineNode(
       },
       { name: 'source', label: 'CSV text field', type: 'string', default: 'content', noExpression: true, showIf: { param: 'operation', equals: ['parse'] } },
       { name: 'delimiter', label: 'Delimiter', type: 'string', default: ',', noExpression: true },
-      { name: 'columns', label: 'Columns (optional, in order)', type: 'stringList', default: [], noExpression: true, showIf: { param: 'operation', equals: ['build'] } },
-      { name: 'flattenNested', label: 'Flatten nested objects (a.b)', type: 'boolean', default: true, noExpression: true, showIf: { param: 'operation', equals: ['build'] } },
-      { name: 'escapeFormulas', label: 'Protect against spreadsheet formula injection', type: 'boolean', default: true, noExpression: true, showIf: { param: 'operation', equals: ['build'] } },
+      {
+        name: 'columns',
+        label: 'Columns (optional, in order)',
+        type: 'stringList',
+        default: [],
+        noExpression: true,
+        showIf: { param: 'operation', equals: ['build'] },
+      },
+      {
+        name: 'flattenNested',
+        label: 'Flatten nested objects (a.b)',
+        type: 'boolean',
+        default: true,
+        noExpression: true,
+        showIf: { param: 'operation', equals: ['build'] },
+      },
+      {
+        name: 'escapeFormulas',
+        label: 'Protect against spreadsheet formula injection',
+        type: 'boolean',
+        default: true,
+        noExpression: true,
+        showIf: { param: 'operation', equals: ['build'] },
+      },
       { name: 'target', label: 'Output field', type: 'string', default: 'csv', noExpression: true, showIf: { param: 'operation', equals: ['build'] } },
     ],
   },
@@ -127,7 +162,14 @@ export const dateTimeNode = defineNode(
         ],
       },
       { name: 'value', label: 'Date', type: 'string', default: '{{ $now }}' },
-      { name: 'format', label: 'Format', type: 'string', default: 'yyyy-MM-dd HH:mm', noExpression: true, showIf: { param: 'operation', equals: ['format', 'now'] } },
+      {
+        name: 'format',
+        label: 'Format',
+        type: 'string',
+        default: 'yyyy-MM-dd HH:mm',
+        noExpression: true,
+        showIf: { param: 'operation', equals: ['format', 'now'] },
+      },
       { name: 'amount', label: 'Amount', type: 'number', default: 1, showIf: { param: 'operation', equals: ['add'] } },
       {
         name: 'unit',
@@ -151,7 +193,8 @@ export const dateTimeNode = defineNode(
         const date = op === 'now' ? ctx.clock.now() : toDate(ctx.param('value', i), fnCtx);
         let result: unknown;
         if (op === 'format' || op === 'now') result = formatDate(date, ctx.param<string>('format'), ctx.settings.timezone);
-        else if (op === 'add') result = new Date(date.getTime() + toNumber(ctx.param('amount', i), 'Amount') * (units[ctx.param<string>('unit')] ?? 86_400_000)).toISOString();
+        else if (op === 'add')
+          result = new Date(date.getTime() + toNumber(ctx.param('amount', i), 'Amount') * (units[ctx.param<string>('unit')] ?? 86_400_000)).toISOString();
         else result = (date.getTime() - toDate(ctx.param('other', i), fnCtx).getTime()) / (units[ctx.param<string>('unit')] ?? 86_400_000);
         const json = cloneJson(item.json);
         setPath(json, ctx.param<string>('target') || 'date', result);
@@ -211,7 +254,11 @@ export const regexNode = defineNode(
       const text = String(ctx.param('text', i) ?? '');
       const json = cloneJson(item.json);
       if (op === 'replace') {
-        setPath(json, target, text.replace(new RegExp(re.source, re.flags.includes('g') ? re.flags : `${re.flags}g`), String(ctx.param('replacement', i) ?? '')));
+        setPath(
+          json,
+          target,
+          text.replace(new RegExp(re.source, re.flags.includes('g') ? re.flags : `${re.flags}g`), String(ctx.param('replacement', i) ?? '')),
+        );
         matched.push({ json });
         return;
       }
@@ -283,7 +330,12 @@ export const textNode = defineNode(
             : op === 'trim'
               ? t.trim()
               : op === 'slugify'
-                ? t.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+                ? t
+                    .normalize('NFKD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/^-+|-+$/g, '')
                 : op === 'truncate'
                   ? (() => {
                       const max = toNumber(ctx.param('maxLength', i), 'Max length');
@@ -334,7 +386,16 @@ export const mathNode = defineNode(
       const b = toNumber(ctx.param('operand', i), 'Operand');
       const op = ctx.param<string>('operation');
       if (op === 'divide' && b === 0) throw new NodeError('DIVIDE_BY_ZERO', 'Division by zero');
-      const r = { add: a + b, subtract: a - b, multiply: a * b, divide: a / b, mod: a % b, pow: a ** b, round: Math.round(a * 10 ** b) / 10 ** b, abs: Math.abs(a) }[op];
+      const r = {
+        add: a + b,
+        subtract: a - b,
+        multiply: a * b,
+        divide: a / b,
+        mod: a % b,
+        pow: a ** b,
+        round: Math.round(a * 10 ** b) / 10 ** b,
+        abs: Math.abs(a),
+      }[op];
       const json = cloneJson(item.json);
       setPath(json, ctx.param<string>('target') || 'result', r);
       return { json };

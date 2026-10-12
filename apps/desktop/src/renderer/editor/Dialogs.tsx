@@ -14,14 +14,37 @@ export function requiredPermissions(): Set<string> {
   return out;
 }
 
-export function PermissionsDialog({ open, onClose, onSaved, intent }: { open: boolean; onClose: () => void; onSaved: (wf: Workflow) => void; intent?: string }) {
+export function PermissionsDialog({
+  open,
+  onClose,
+  onSaved,
+  intent,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSaved: (wf: Workflow) => void;
+  intent?: string;
+}) {
   const workflow = useEditor((s) => s.workflow);
   const current = useEditor((s) => s.settings?.permissions);
-  const [grants, setGrants] = useState<Omit<PermissionGrants, 'confirmedAt'>>({ fs: [], allowPrivateNetwork: false, notifications: true, email: false, advancedNodes: false });
+  const [grants, setGrants] = useState<Omit<PermissionGrants, 'confirmedAt'>>({
+    fs: [],
+    allowPrivateNetwork: false,
+    notifications: true,
+    email: false,
+    advancedNodes: false,
+  });
   const [newPath, setNewPath] = useState('');
   const needs = useMemo(() => (open ? requiredPermissions() : new Set<string>()), [open]);
   useEffect(() => {
-    if (open && current) setGrants({ fs: current.fs, allowPrivateNetwork: current.allowPrivateNetwork, notifications: current.notifications, email: current.email, advancedNodes: current.advancedNodes });
+    if (open && current)
+      setGrants({
+        fs: current.fs,
+        allowPrivateNetwork: current.allowPrivateNetwork,
+        notifications: current.notifications,
+        email: current.email,
+        advancedNodes: current.advancedNodes,
+      });
   }, [open, current]);
   if (!workflow) return null;
   const addPath = (p: string, access: FsGrant['access'] = 'read') => {
@@ -39,7 +62,19 @@ export function PermissionsDialog({ open, onClose, onSaved, intent }: { open: bo
       toast.error('Could not save permissions', e);
     }
   };
-  const Row = ({ title, desc, needed, checked, onChange }: { title: string; desc: string; needed: boolean; checked: boolean; onChange: (v: boolean) => void }) => (
+  const Row = ({
+    title,
+    desc,
+    needed,
+    checked,
+    onChange,
+  }: {
+    title: string;
+    desc: string;
+    needed: boolean;
+    checked: boolean;
+    onChange: (v: boolean) => void;
+  }) => (
     <div className="flex items-start justify-between gap-4 rounded-lg border border-line bg-bg/50 p-3">
       <div>
         <div className="flex items-center gap-2 text-[13px] font-medium">
@@ -73,8 +108,8 @@ export function PermissionsDialog({ open, onClose, onSaved, intent }: { open: bo
       }
     >
       <p className="mb-4 text-xs leading-relaxed text-muted">
-        Workflows can only touch what you allow here. Imported workflows always start with no permissions. Files are limited to the folders below (plus PulseFlow’s own demo folder); public internet access is allowed, but private-network
-        and localhost addresses are blocked unless you enable them.
+        Workflows can only touch what you allow here. Imported workflows always start with no permissions. Files are limited to the folders below (plus
+        PulseFlow’s own demo folder); public internet access is allowed, but private-network and localhost addresses are blocked unless you enable them.
       </p>
       <div className="space-y-2.5">
         <div className="rounded-lg border border-line bg-bg/50 p-3">
@@ -87,7 +122,13 @@ export function PermissionsDialog({ open, onClose, onSaved, intent }: { open: bo
                 <code className="min-w-0 flex-1 truncate rounded bg-raised px-2 py-1.5 font-mono text-[11.5px]" title={g.path}>
                   {g.path}
                 </code>
-                <Select value={g.access} className="h-7 w-32 text-xs" onChange={(e) => setGrants((s) => ({ ...s, fs: s.fs.map((x) => (x.path === g.path ? { ...x, access: e.target.value as FsGrant['access'] } : x)) }))}>
+                <Select
+                  value={g.access}
+                  className="h-7 w-32 text-xs"
+                  onChange={(e) =>
+                    setGrants((s) => ({ ...s, fs: s.fs.map((x) => (x.path === g.path ? { ...x, access: e.target.value as FsGrant['access'] } : x)) }))
+                  }
+                >
                   <option value="read">Read only</option>
                   <option value="readwrite">Read & write</option>
                 </Select>
@@ -97,7 +138,13 @@ export function PermissionsDialog({ open, onClose, onSaved, intent }: { open: bo
               </div>
             ))}
             <div className="flex gap-1.5">
-              <Input value={newPath} onChange={(e) => setNewPath(e.target.value)} placeholder="Absolute folder path" className="h-7 font-mono text-xs" onKeyDown={(e) => e.key === 'Enter' && addPath(newPath)} />
+              <Input
+                value={newPath}
+                onChange={(e) => setNewPath(e.target.value)}
+                placeholder="Absolute folder path"
+                className="h-7 font-mono text-xs"
+                onKeyDown={(e) => e.key === 'Enter' && addPath(newPath)}
+              />
               {bridge ? (
                 <IconButton
                   label="Browse for folder"
@@ -116,9 +163,27 @@ export function PermissionsDialog({ open, onClose, onSaved, intent }: { open: bo
             </div>
           </div>
         </div>
-        <Row title="Private network & localhost" desc="Allow requests to 127.0.0.1, 192.168.x.x, 10.x.x.x and similar. Cloud metadata addresses stay blocked." needed={needs.has('network')} checked={grants.allowPrivateNetwork} onChange={(v) => setGrants((g) => ({ ...g, allowPrivateNetwork: v }))} />
-        <Row title="Send email" desc="Allow Send Email nodes to deliver through your configured SMTP credential." needed={needs.has('email')} checked={grants.email} onChange={(v) => setGrants((g) => ({ ...g, email: v }))} />
-        <Row title="Desktop notifications" desc="Allow Notify nodes to show system notifications." needed={needs.has('notify')} checked={grants.notifications} onChange={(v) => setGrants((g) => ({ ...g, notifications: v }))} />
+        <Row
+          title="Private network & localhost"
+          desc="Allow requests to 127.0.0.1, 192.168.x.x, 10.x.x.x and similar. Cloud metadata addresses stay blocked."
+          needed={needs.has('network')}
+          checked={grants.allowPrivateNetwork}
+          onChange={(v) => setGrants((g) => ({ ...g, allowPrivateNetwork: v }))}
+        />
+        <Row
+          title="Send email"
+          desc="Allow Send Email nodes to deliver through your configured SMTP credential."
+          needed={needs.has('email')}
+          checked={grants.email}
+          onChange={(v) => setGrants((g) => ({ ...g, email: v }))}
+        />
+        <Row
+          title="Desktop notifications"
+          desc="Allow Notify nodes to show system notifications."
+          needed={needs.has('notify')}
+          checked={grants.notifications}
+          onChange={(v) => setGrants((g) => ({ ...g, notifications: v }))}
+        />
         <Row
           title="Advanced nodes (shell / code)"
           desc="Runs commands or scripts with your user account’s rights. Not a security sandbox. Also requires Settings → Advanced nodes."
@@ -161,7 +226,8 @@ export function VersionsDialog({ open, onClose, onRestored }: { open: boolean; o
                   <span className="truncate text-ink">{v.note || 'No note'}</span>
                 </div>
                 <div className="text-[11px] text-faint">
-                  {dateTime(v.createdAt)} · {relativeTime(v.createdAt)} · {v.graph.nodes.length} nodes · <span className="font-mono">{v.checksum.slice(0, 10)}</span>
+                  {dateTime(v.createdAt)} · {relativeTime(v.createdAt)} · {v.graph.nodes.length} nodes ·{' '}
+                  <span className="font-mono">{v.checksum.slice(0, 10)}</span>
                 </div>
               </div>
               <Button
@@ -208,7 +274,13 @@ export function PublishDialog({ open, onClose, onPublish }: { open: boolean; onC
       }
     >
       <p className="mb-3 text-xs text-muted">Active triggers always run the published version. Your draft stays editable.</p>
-      <Input autoFocus value={note} onChange={(e) => setNote(e.target.value)} placeholder="What changed? (optional)" onKeyDown={(e) => e.key === 'Enter' && onPublish(note)} />
+      <Input
+        autoFocus
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder="What changed? (optional)"
+        onKeyDown={(e) => e.key === 'Enter' && onPublish(note)}
+      />
     </Modal>
   );
 }

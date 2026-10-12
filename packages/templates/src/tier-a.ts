@@ -14,7 +14,16 @@ export const A01 = t({
   services: [],
   setupMinutes: 0,
   tags: ['starter', 'json', 'files'],
-  variables: [{ name: 'outputDir', label: 'Output folder', kind: 'folder', default: '${templateDir}/output', access: 'readwrite', description: 'Where the greeting JSON is saved.' }],
+  variables: [
+    {
+      name: 'outputDir',
+      label: 'Output folder',
+      kind: 'folder',
+      default: '${templateDir}/output',
+      access: 'readwrite',
+      description: 'Where the greeting JSON is saved.',
+    },
+  ],
   sample: { input: { name: 'PulseFlow' }, output: 'output/hello-pulseflow.json containing the greeting, plus a notification.' },
   docs: `Manual Trigger emits \`{ "name": "PulseFlow" }\`. **Set Fields** builds a greeting, **IF** checks the name is not empty, **Write File** stores the result as JSON and **Local Notification** tells you where. If the name is empty the **Log** step records why nothing was written.`,
   workflow: {
@@ -61,8 +70,22 @@ export const A02 = t({
   setupMinutes: 2,
   tags: ['files', 'organize', 'watch'],
   variables: [
-    { name: 'watchDir', label: 'Folder to watch', kind: 'folder', default: '${templateDir}/incoming', access: 'readwrite', description: 'e.g. your Downloads folder.' },
-    { name: 'destDir', label: 'Organize into', kind: 'folder', default: '${templateDir}/organized', access: 'readwrite', description: 'Category sub-folders are created here.' },
+    {
+      name: 'watchDir',
+      label: 'Folder to watch',
+      kind: 'folder',
+      default: '${templateDir}/incoming',
+      access: 'readwrite',
+      description: 'e.g. your Downloads folder.',
+    },
+    {
+      name: 'destDir',
+      label: 'Organize into',
+      kind: 'folder',
+      default: '${templateDir}/organized',
+      access: 'readwrite',
+      description: 'Category sub-folders are created here.',
+    },
   ],
   fixtures: {
     'incoming/holiday.jpg': 'not-really-a-jpeg (demo fixture)\n',
@@ -80,7 +103,13 @@ export const A02 = t({
     graph: {
       schemaVersion: 1,
       nodes: [
-        node('watch', 'core.folderWatchTrigger', 'New File', X(0), Y(1), { folder: '{{ $vars.watchDir }}', recursive: false, events: ['created'], pollSeconds: 2, settleSeconds: 1 }),
+        node('watch', 'core.folderWatchTrigger', 'New File', X(0), Y(1), {
+          folder: '{{ $vars.watchDir }}',
+          recursive: false,
+          events: ['created'],
+          pollSeconds: 2,
+          settleSeconds: 1,
+        }),
         node('classify', 'core.set', 'Classify Extension', X(1), Y(1), {
           fields: [
             {
@@ -189,7 +218,8 @@ export const A04 = t({
     { name: 'outputFile', label: 'JSON output', kind: 'file', default: '${templateDir}/products.json', access: 'readwrite' },
   ],
   fixtures: {
-    'products.csv': 'sku,name,price,quantity,notes\r\nA-1,Café crème,3.50,10,"Contains ""milk"", sugar"\r\nB-2,日本茶,4.25,5,"Line one\nLine two"\r\nC-3,"Widget, large",12,0,\r\n',
+    'products.csv':
+      'sku,name,price,quantity,notes\r\nA-1,Café crème,3.50,10,"Contains ""milk"", sugar"\r\nB-2,日本茶,4.25,5,"Line one\nLine two"\r\nC-3,"Widget, large",12,0,\r\n',
   },
   sample: { input: 'products.csv', output: 'products.json — [{ "sku": "A-1", "price": 3.5, ... }]' },
   docs: 'Reads the CSV (RFC 4180: quoted fields, doubled quotes, embedded newlines, UTF-8 BOM), converts **price** and **quantity** to numbers and writes a pretty-printed JSON array.',
@@ -248,7 +278,7 @@ export const A05 = t({
     )}\n`,
   },
   sample: { input: 'orders.json', output: 'orders-report.csv with escaped quotes/newlines and neutralized formulas' },
-  docs: 'Selects and flattens fields, then builds CSV with RFC 4180 escaping. Cells starting with `=`, `+`, `-` or `@` are prefixed with `\'` so spreadsheets do not execute them as formulas.',
+  docs: "Selects and flattens fields, then builds CSV with RFC 4180 escaping. Cells starting with `=`, `+`, `-` or `@` are prefixed with `'` so spreadsheets do not execute them as formulas.",
   workflow: {
     name: 'JSON to CSV Report',
     description: 'Read JSON → select fields → build CSV → save',
@@ -267,7 +297,14 @@ export const A05 = t({
             { name: 'note', value: '{{ $json.note }}' },
           ],
         }),
-        node('csv', 'core.csv', 'Build CSV', X(3), Y(1), { operation: 'build', delimiter: ',', columns: [], flattenNested: true, escapeFormulas: true, target: 'csv' }),
+        node('csv', 'core.csv', 'Build CSV', X(3), Y(1), {
+          operation: 'build',
+          delimiter: ',',
+          columns: [],
+          flattenNested: true,
+          escapeFormulas: true,
+          target: 'csv',
+        }),
         node('write', 'core.fileWrite', 'Save CSV', X(4), Y(1), { path: '{{ $vars.outputFile }}', content: '{{ $json.csv }}', mode: 'overwrite' }),
       ],
       edges: chain('trigger', 'read', 'select', 'csv', 'write'),
@@ -318,7 +355,8 @@ export const A06 = t({
         node('report', 'core.markdown', 'Build Report', X(5), Y(1), {
           title: 'Duplicate files — {{ $today }}',
           intro: 'Scanned `{{ $vars.folder }}`. Nothing was deleted. Review each group and remove copies yourself if you wish.',
-          itemTemplate: '- **{{ $json.count }} identical files** ({{ $json.items[0].size }} bytes, sha256 `{{ substring($json.key, 0, 12) }}…`): {{ join(pluck($json.items, "relativePath"), ", ") }}',
+          itemTemplate:
+            '- **{{ $json.count }} identical files** ({{ $json.items[0].size }} bytes, sha256 `{{ substring($json.key, 0, 12) }}…`): {{ join(pluck($json.items, "relativePath"), ", ") }}',
           emptyText: '_No duplicate files found._',
           footer: '',
         }),
@@ -355,13 +393,22 @@ export const A07 = t({
     graph: {
       schemaVersion: 1,
       nodes: [
-        node('schedule', 'core.scheduleTrigger', 'Weekdays 09:00', X(0), Y(1), { mode: 'cron', cron: '0 9 * * 1-5', intervalSeconds: 300, missedRunPolicy: 'skip' }),
+        node('schedule', 'core.scheduleTrigger', 'Weekdays 09:00', X(0), Y(1), {
+          mode: 'cron',
+          cron: '0 9 * * 1-5',
+          intervalSeconds: 300,
+          missedRunPolicy: 'skip',
+        }),
         node('compose', 'core.set', 'Compose Message', X(1), Y(1), {
           fields: [{ name: 'text', value: '{{ $vars.message }} ({{ formatDate($json.firedAt, "EEE HH:mm") }})' }],
           keepExisting: true,
         }),
         node('notify', 'core.notify', 'Show Reminder', X(2), Y(1), { title: 'Reminder', body: '{{ $json.text }}' }),
-        node('log', 'core.fileWrite', 'Log Reminder', X(3), Y(1), { path: '{{ $vars.logFile }}', content: '{{ $json.firedAt }} {{ $json.text }}\n', mode: 'append' }),
+        node('log', 'core.fileWrite', 'Log Reminder', X(3), Y(1), {
+          path: '{{ $vars.logFile }}',
+          content: '{{ $json.firedAt }} {{ $json.text }}\n',
+          mode: 'append',
+        }),
       ],
       edges: chain('schedule', 'compose', 'notify', 'log'),
     },
@@ -411,16 +458,29 @@ export const A08 = t({
           dryRun: false,
         }),
         node('hash', 'core.fileHash', 'Hash Copy', X(3), Y(1), { path: '{{ $json.to }}', target: 'backupSha256' }),
-        node('verify', 'core.if', 'Checksums Match?', X(4), Y(1), { conditions: [{ left: '{{ $json.backupSha256 }}', operator: 'equals', right: '{{ $json.sha256 }}' }], combine: 'and' }),
+        node('verify', 'core.if', 'Checksums Match?', X(4), Y(1), {
+          conditions: [{ left: '{{ $json.backupSha256 }}', operator: 'equals', right: '{{ $json.sha256 }}' }],
+          combine: 'and',
+        }),
         node('collect', 'core.aggregate', 'Collect', X(5), Y(0), { mode: 'collect', outputField: 'files' }),
         node('manifest', 'core.fileWrite', 'Write Manifest', X(6), Y(0), {
           path: '{{ joinPath($vars.backupDir, $today, "backup-manifest.json") }}',
           content: '{{ { verifiedAt: $now, count: $json.count, files: $json.files } }}',
           mode: 'overwrite',
         }),
-        node('fail', 'core.stopError', 'Checksum Mismatch', X(5), Y(2), { message: 'Backup verification failed for {{ $json.relativePath }}', code: 'CHECKSUM_MISMATCH' }),
+        node('fail', 'core.stopError', 'Checksum Mismatch', X(5), Y(2), {
+          message: 'Backup verification failed for {{ $json.relativePath }}',
+          code: 'CHECKSUM_MISMATCH',
+        }),
       ],
-      edges: [edge('manual', 'scan'), edge('schedule', 'scan'), ...chain('scan', 'copy', 'hash', 'verify'), edge('verify', 'collect', 'true'), edge('collect', 'manifest'), edge('verify', 'fail', 'false')],
+      edges: [
+        edge('manual', 'scan'),
+        edge('schedule', 'scan'),
+        ...chain('scan', 'copy', 'hash', 'verify'),
+        edge('verify', 'collect', 'true'),
+        edge('collect', 'manifest'),
+        edge('verify', 'fail', 'false'),
+      ],
     },
     settings: {},
   },
@@ -443,7 +503,9 @@ export const A09 = t({
     { name: 'inputFile', label: 'Sales CSV', kind: 'file', default: '${templateDir}/sales.csv', access: 'read' },
     { name: 'outputDir', label: 'Reports folder', kind: 'folder', default: '${templateDir}/reports', access: 'readwrite' },
   ],
-  fixtures: { 'sales.csv': 'date,region,amount\n2026-01-05,North,120.50\n2026-01-05,South,80\n2026-01-05,North,30.25\n2026-01-05,West,210\n2026-01-05,South,19.99\n' },
+  fixtures: {
+    'sales.csv': 'date,region,amount\n2026-01-05,North,120.50\n2026-01-05,South,80\n2026-01-05,North,30.25\n2026-01-05,West,210\n2026-01-05,South,19.99\n',
+  },
   sample: { input: 'sales.csv', output: 'reports/report-<timestamp>.md with a per-region table' },
   docs: 'Groups rows by region (count, total), sorts by revenue and writes a Markdown table. Schedule it daily or run it manually.',
   workflow: {
@@ -465,7 +527,11 @@ export const A09 = t({
           emptyText: '_No sales data._',
           footer: '',
         }),
-        node('write', 'core.fileWrite', 'Save Report', X(6), Y(1), { path: '{{ joinPath($vars.outputDir, "report-" + formatDate($now, "yyyy-MM-dd-HHmmss") + ".md") }}', content: '{{ $json.markdown }}', mode: 'unique' }),
+        node('write', 'core.fileWrite', 'Save Report', X(6), Y(1), {
+          path: '{{ joinPath($vars.outputDir, "report-" + formatDate($now, "yyyy-MM-dd-HHmmss") + ".md") }}',
+          content: '{{ $json.markdown }}',
+          mode: 'unique',
+        }),
       ],
       edges: [edge('manual', 'read'), edge('schedule', 'read'), ...chain('read', 'parse', 'summary', 'sort', 'md', 'write')],
     },
@@ -487,7 +553,10 @@ export const A10 = t({
   setupMinutes: 2,
   tags: ['webhook', 'json', 'ndjson'],
   variables: [{ name: 'outputFile', label: 'NDJSON file', kind: 'file', default: '${templateDir}/submissions.ndjson', access: 'readwrite' }],
-  sample: { input: { name: 'Ada', email: 'ada@example.com' }, output: 'HTTP 200 {"ok":true} and a new line in submissions.ndjson; invalid input gets HTTP 422.' },
+  sample: {
+    input: { name: 'Ada', email: 'ada@example.com' },
+    output: 'HTTP 200 {"ok":true} and a new line in submissions.ndjson; invalid input gets HTTP 422.',
+  },
   docs: 'Activate, then copy the webhook URL from the trigger inspector. POST `{"name":"Ada","email":"ada@example.com"}`. Valid submissions are appended (one JSON object per line) and answered with HTTP 200; invalid ones get HTTP 422 with reasons. The URL contains an unguessable token; you can additionally require a shared secret or HMAC signature.',
   workflow: {
     name: 'Local Webhook Intake',
@@ -501,7 +570,11 @@ export const A10 = t({
           schema: {
             type: 'object',
             required: ['name', 'email'],
-            properties: { name: { type: 'string', minLength: 1, maxLength: 200 }, email: { type: 'string', format: 'email' }, message: { type: 'string', maxLength: 5000 } },
+            properties: {
+              name: { type: 'string', minLength: 1, maxLength: 200 },
+              email: { type: 'string', format: 'email' },
+              message: { type: 'string', maxLength: 5000 },
+            },
             additionalProperties: false,
           },
         }),
@@ -534,7 +607,13 @@ export const A11 = t({
   setupMinutes: 1,
   tags: ['monitor', 'http', 'uptime'],
   variables: [
-    { name: 'url', label: 'URL to monitor', kind: 'url', default: '${fixturesUrl}/monitor', description: 'Defaults to the built-in offline test site. Change it to a real site if you like.' },
+    {
+      name: 'url',
+      label: 'URL to monitor',
+      kind: 'url',
+      default: '${fixturesUrl}/monitor',
+      description: 'Defaults to the built-in offline test site. Change it to a real site if you like.',
+    },
     { name: 'logFile', label: 'Change log', kind: 'file', default: '${templateDir}/monitor.log', access: 'readwrite' },
   ],
   sample: { input: 'GET url', output: 'Notification + monitor.log line when the status changes (e.g. 200 → 503)' },
@@ -547,7 +626,15 @@ export const A11 = t({
       nodes: [
         node('manual', 'core.manualTrigger', 'Check Now', X(0), Y(0)),
         node('every', 'core.scheduleTrigger', 'Every 5 Minutes', X(0), Y(2), { mode: 'interval', intervalSeconds: 300 }),
-        node('get', 'core.httpRequest', 'GET URL', X(1), Y(1), { method: 'GET', url: '{{ $vars.url }}', failOnError: false, timeoutMs: 10_000, responseFormat: 'text' }, { retry: { maxAttempts: 2, initialDelayMs: 500 } }),
+        node(
+          'get',
+          'core.httpRequest',
+          'GET URL',
+          X(1),
+          Y(1),
+          { method: 'GET', url: '{{ $vars.url }}', failOnError: false, timeoutMs: 10_000, responseFormat: 'text' },
+          { retry: { maxAttempts: 2, initialDelayMs: 500 } },
+        ),
         node('last', 'core.kv', 'Load Last Status', X(2), Y(1), { operation: 'get', key: 'lastStatus', target: 'previousStatus' }),
         node('cmp', 'core.set', 'Compare', X(3), Y(1), {
           keepExisting: true,
@@ -555,11 +642,25 @@ export const A11 = t({
         }),
         node('save', 'core.kv', 'Save Status', X(4), Y(1), { operation: 'set', key: 'lastStatus', value: '{{ $json.status }}', target: 'savedStatus' }),
         node('if', 'core.if', 'Changed?', X(5), Y(1), { conditions: [{ left: '{{ $json.changed }}', operator: 'isTrue' }] }),
-        node('notify', 'core.notify', 'Notify Change', X(6), Y(0), { title: 'Website status changed', body: '{{ $vars.url }}: {{ $json.previousStatus }} → {{ $json.status }}' }),
-        node('log', 'core.fileWrite', 'Log Change', X(7), Y(0), { path: '{{ $vars.logFile }}', content: '{{ $now }} {{ $vars.url }} {{ $json.previousStatus }} -> {{ $json.status }}\n', mode: 'append' }),
+        node('notify', 'core.notify', 'Notify Change', X(6), Y(0), {
+          title: 'Website status changed',
+          body: '{{ $vars.url }}: {{ $json.previousStatus }} → {{ $json.status }}',
+        }),
+        node('log', 'core.fileWrite', 'Log Change', X(7), Y(0), {
+          path: '{{ $vars.logFile }}',
+          content: '{{ $now }} {{ $vars.url }} {{ $json.previousStatus }} -> {{ $json.status }}\n',
+          mode: 'append',
+        }),
         node('same', 'core.log', 'Unchanged', X(6), Y(2), { message: 'Status {{ $json.status }} (unchanged)' }),
       ],
-      edges: [edge('manual', 'get'), edge('every', 'get'), ...chain('get', 'last', 'cmp', 'save', 'if'), edge('if', 'notify', 'true'), edge('notify', 'log'), edge('if', 'same', 'false')],
+      edges: [
+        edge('manual', 'get'),
+        edge('every', 'get'),
+        ...chain('get', 'last', 'cmp', 'save', 'if'),
+        edge('if', 'notify', 'true'),
+        edge('notify', 'log'),
+        edge('if', 'same', 'false'),
+      ],
     },
     settings: {},
   },
@@ -579,7 +680,12 @@ export const A12 = t({
   setupMinutes: 2,
   tags: ['monitor', 'http', 'csv'],
   variables: [
-    { name: 'endpoints', label: 'Endpoints (comma separated)', kind: 'string', default: '${fixturesUrl}/api/health,${fixturesUrl}/api/slow,${fixturesUrl}/api/error' },
+    {
+      name: 'endpoints',
+      label: 'Endpoints (comma separated)',
+      kind: 'string',
+      default: '${fixturesUrl}/api/health,${fixturesUrl}/api/slow,${fixturesUrl}/api/error',
+    },
     { name: 'reportFile', label: 'CSV report', kind: 'file', default: '${templateDir}/health-report.csv', access: 'readwrite' },
   ],
   sample: { input: 'List of URLs', output: 'health-report.csv (endpoint, status, ok, latency) + alert if any are unhealthy' },
@@ -592,9 +698,20 @@ export const A12 = t({
       nodes: [
         node('manual', 'core.manualTrigger', 'Check Now', X(0), Y(0)),
         node('every', 'core.scheduleTrigger', 'Every 15 Minutes', X(0), Y(2), { mode: 'interval', intervalSeconds: 900 }),
-        node('list', 'core.set', 'Endpoint List', X(1), Y(1), { keepExisting: false, fields: [{ name: 'endpoints', value: '{{ split($vars.endpoints, ",") }}' }] }),
+        node('list', 'core.set', 'Endpoint List', X(1), Y(1), {
+          keepExisting: false,
+          fields: [{ name: 'endpoints', value: '{{ split($vars.endpoints, ",") }}' }],
+        }),
         node('split', 'core.splitOut', 'One per Endpoint', X(2), Y(1), { field: 'endpoints', outputField: 'endpoint' }),
-        node('get', 'core.httpRequest', 'Request', X(3), Y(1), { method: 'GET', url: '{{ trim($json.endpoint) }}', failOnError: false, timeoutMs: 1000, responseFormat: 'text' }, { retry: { maxAttempts: 2, initialDelayMs: 200, jitter: false }, onError: 'continue' }),
+        node(
+          'get',
+          'core.httpRequest',
+          'Request',
+          X(3),
+          Y(1),
+          { method: 'GET', url: '{{ trim($json.endpoint) }}', failOnError: false, timeoutMs: 1000, responseFormat: 'text' },
+          { retry: { maxAttempts: 2, initialDelayMs: 200, jitter: false }, onError: 'continue' },
+        ),
         node('row', 'core.set', 'Status Row', X(4), Y(1), {
           keepExisting: false,
           fields: [
@@ -606,12 +723,27 @@ export const A12 = t({
             { name: 'checkedAt', value: '{{ $now }}' },
           ],
         }),
-        node('csv', 'core.csv', 'Build CSV', X(5), Y(0), { operation: 'build', columns: ['endpoint', 'status', 'ok', 'latencyMs', 'error', 'checkedAt'], escapeFormulas: true }),
+        node('csv', 'core.csv', 'Build CSV', X(5), Y(0), {
+          operation: 'build',
+          columns: ['endpoint', 'status', 'ok', 'latencyMs', 'error', 'checkedAt'],
+          escapeFormulas: true,
+        }),
         node('write', 'core.fileWrite', 'Save Report', X(6), Y(0), { path: '{{ $vars.reportFile }}', content: '{{ $json.csv }}', mode: 'overwrite' }),
         node('bad', 'core.filter', 'Unhealthy Only', X(5), Y(2), { conditions: [{ left: '{{ $json.ok }}', operator: 'isFalse' }] }),
-        node('alert', 'core.notify', 'Alert', X(6), Y(2), { title: 'API health check', body: '{{ $input.count }} endpoint(s) unhealthy: {{ join(pluck($input.all, "endpoint"), ", ") }}' }),
+        node('alert', 'core.notify', 'Alert', X(6), Y(2), {
+          title: 'API health check',
+          body: '{{ $input.count }} endpoint(s) unhealthy: {{ join(pluck($input.all, "endpoint"), ", ") }}',
+        }),
       ],
-      edges: [edge('manual', 'list'), edge('every', 'list'), ...chain('list', 'split', 'get', 'row'), edge('row', 'csv'), edge('csv', 'write'), edge('row', 'bad'), edge('bad', 'alert')],
+      edges: [
+        edge('manual', 'list'),
+        edge('every', 'list'),
+        ...chain('list', 'split', 'get', 'row'),
+        edge('row', 'csv'),
+        edge('csv', 'write'),
+        edge('row', 'bad'),
+        edge('bad', 'alert'),
+      ],
     },
     settings: { maxParallelNodes: 2 },
   },
@@ -646,9 +778,16 @@ export const A13 = t({
       nodes: [
         node('watch', 'core.fileWatchTrigger', 'Log Appended', X(0), Y(1), { path: '{{ $vars.logFile }}', pollSeconds: 2, emit: 'appended' }),
         node('lines', 'core.text', 'Split Lines', X(1), Y(1), { operation: 'lines', text: '{{ $json.appendedText }}', target: 'line' }),
-        node('match', 'core.filter', 'Matches Pattern', X(2), Y(1), { conditions: [{ left: '{{ $json.line }}', operator: 'regex', right: '{{ $vars.pattern }}' }] }),
+        node('match', 'core.filter', 'Matches Pattern', X(2), Y(1), {
+          conditions: [{ left: '{{ $json.line }}', operator: 'regex', right: '{{ $vars.pattern }}' }],
+        }),
         node('notify', 'core.notify', 'Alert', X(3), Y(0), { title: 'Log alert', body: '{{ $input.count }} matching line(s): {{ $input.first.line }}' }),
-        node('write', 'core.fileWrite', 'Append Summary', X(4), Y(0), { path: '{{ $vars.alertFile }}', content: '{{ $now }} {{ $json.line }}\n', mode: 'append', perItem: true }),
+        node('write', 'core.fileWrite', 'Append Summary', X(4), Y(0), {
+          path: '{{ $vars.alertFile }}',
+          content: '{{ $now }} {{ $json.line }}\n',
+          mode: 'append',
+          perItem: true,
+        }),
       ],
       edges: chain('watch', 'lines', 'match', 'notify', 'write'),
     },
@@ -709,10 +848,15 @@ export const A14 = t({
         node('md', 'core.markdown', 'Digest', X(4), Y(1), {
           title: 'Task digest — {{ $today }}',
           intro: 'Open tasks due within {{ $vars.daysAhead }} day(s):',
-          itemTemplate: '- [ ] **{{ $json.title }}** — due {{ $json.due }}{{ $json.due < $today ? " (overdue)" : "" }}{{ $json.priority == "high" ? " — high priority" : "" }}',
+          itemTemplate:
+            '- [ ] **{{ $json.title }}** — due {{ $json.due }}{{ $json.due < $today ? " (overdue)" : "" }}{{ $json.priority == "high" ? " — high priority" : "" }}',
           emptyText: '_Nothing due. Enjoy your day!_',
         }),
-        node('write', 'core.fileWrite', 'Save Digest', X(5), Y(1), { path: '{{ joinPath($vars.outputDir, "digest-" + $today + ".md") }}', content: '{{ $json.markdown }}', mode: 'overwrite' }),
+        node('write', 'core.fileWrite', 'Save Digest', X(5), Y(1), {
+          path: '{{ joinPath($vars.outputDir, "digest-" + $today + ".md") }}',
+          content: '{{ $json.markdown }}',
+          mode: 'overwrite',
+        }),
       ],
       edges: [edge('manual', 'read'), edge('schedule', 'read'), ...chain('read', 'due', 'sort', 'md', 'write')],
     },
@@ -788,9 +932,21 @@ export const A16 = t({
       schemaVersion: 1,
       nodes: [
         node('trigger', 'core.manualTrigger', 'Start', X(0), Y(1)),
-        node('flaky', 'core.httpRequest', 'Flaky Service', X(1), Y(1), { method: 'GET', url: '{{ $app.fixturesUrl }}/flaky?failures={{ $vars.failures }}&key={{ $execution.id }}', failOnError: true, timeoutMs: 5000 }, { retry: { maxAttempts: 4, initialDelayMs: 500, multiplier: 2, maxDelayMs: 5000, jitter: false } }),
+        node(
+          'flaky',
+          'core.httpRequest',
+          'Flaky Service',
+          X(1),
+          Y(1),
+          { method: 'GET', url: '{{ $app.fixturesUrl }}/flaky?failures={{ $vars.failures }}&key={{ $execution.id }}', failOnError: true, timeoutMs: 5000 },
+          { retry: { maxAttempts: 4, initialDelayMs: 500, multiplier: 2, maxDelayMs: 5000, jitter: false } },
+        ),
         node('log', 'core.log', 'Recovered', X(2), Y(1), { message: 'Recovered on call {{ $json.body.call }} after {{ $json.body.call - 1 }} failure(s)' }),
-        node('write', 'core.fileWrite', 'Append Log', X(3), Y(1), { path: '{{ $vars.logFile }}', content: '{{ $now }} execution {{ $execution.id }} recovered on call {{ $json.body.call }}\n', mode: 'append' }),
+        node('write', 'core.fileWrite', 'Append Log', X(3), Y(1), {
+          path: '{{ $vars.logFile }}',
+          content: '{{ $now }} execution {{ $execution.id }} recovered on call {{ $json.body.call }}\n',
+          mode: 'append',
+        }),
       ],
       edges: chain('trigger', 'flaky', 'log', 'write'),
     },

@@ -26,10 +26,13 @@ export class SystemClock implements Clock {
         clearTimeout(t);
         reject(abortError(signal));
       };
-      const t = setTimeout(() => {
-        signal?.removeEventListener('abort', onAbort);
-        resolve();
-      }, Math.max(0, ms));
+      const t = setTimeout(
+        () => {
+          signal?.removeEventListener('abort', onAbort);
+          resolve();
+        },
+        Math.max(0, ms),
+      );
       signal?.addEventListener('abort', onAbort, { once: true });
     });
   }

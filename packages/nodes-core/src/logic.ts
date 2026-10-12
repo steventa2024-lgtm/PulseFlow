@@ -220,7 +220,9 @@ export const splitOutNode = defineNode(
       const parent = includeParent ? { ...item.json } : {};
       if (includeParent) delete parent[field];
       for (const el of list) {
-        out.push({ json: el && typeof el === 'object' && !Array.isArray(el) ? { ...parent, ...(el as Record<string, unknown>) } : { ...parent, [outField]: el } });
+        out.push({
+          json: el && typeof el === 'object' && !Array.isArray(el) ? { ...parent, ...(el as Record<string, unknown>) } : { ...parent, [outField]: el },
+        });
       }
     }
     return { main: out };
@@ -529,7 +531,9 @@ export const loopOverItemsNode = defineNode(
     const out: Item[] = [];
     for (let i = 0; i < iterations; i++) {
       if (ctx.signal.aborted) throw new NodeError('CANCELLED', 'Loop cancelled');
-      out.push(...(await ctx.services.runSubworkflow(id, ctx.items.slice(i * size, (i + 1) * size), { depth: ctx.depth + 1, parentExecutionId: ctx.executionId })));
+      out.push(
+        ...(await ctx.services.runSubworkflow(id, ctx.items.slice(i * size, (i + 1) * size), { depth: ctx.depth + 1, parentExecutionId: ctx.executionId })),
+      );
     }
     return { main: out };
   },

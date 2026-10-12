@@ -24,7 +24,10 @@ export function WorkflowsPage() {
       const bundle = JSON.parse(await file.text()) as unknown;
       const r = await api.importBundle(bundle);
       void qc.invalidateQueries({ queryKey: ['workflows'] });
-      toast.ok(`Imported ${r.workflows.length} workflow${r.workflows.length === 1 ? '' : 's'}`, 'Imported workflows are inactive and have no permissions until you review them.');
+      toast.ok(
+        `Imported ${r.workflows.length} workflow${r.workflows.length === 1 ? '' : 's'}`,
+        'Imported workflows are inactive and have no permissions until you review them.',
+      );
     } catch (e) {
       toast.error('Import failed', e);
     }
@@ -43,7 +46,13 @@ export function WorkflowsPage() {
             <p className="mt-1 text-[13px] text-muted">Automations that run on this computer. Nothing leaves your machine unless a workflow sends it.</p>
           </div>
           <div className="flex gap-2">
-            <input ref={fileRef} type="file" accept=".json,application/json" className="hidden" onChange={(e) => e.target.files?.[0] && void importFile(e.target.files[0])} />
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".json,application/json"
+              className="hidden"
+              onChange={(e) => e.target.files?.[0] && void importFile(e.target.files[0])}
+            />
             <Button icon={<Upload size={14} />} onClick={() => fileRef.current?.click()}>
               Import
             </Button>
@@ -103,7 +112,12 @@ export function WorkflowsPage() {
               </thead>
               <tbody>
                 {(list.data ?? []).map((w) => (
-                  <tr key={w.id} className="cursor-pointer border-b border-line/60 last:border-0 hover:bg-hover/50" onClick={() => navigate(`/workflows/${w.id}`)} data-testid={`workflow-row-${w.name}`}>
+                  <tr
+                    key={w.id}
+                    className="cursor-pointer border-b border-line/60 last:border-0 hover:bg-hover/50"
+                    onClick={() => navigate(`/workflows/${w.id}`)}
+                    data-testid={`workflow-row-${w.name}`}
+                  >
                     <td className="px-4 py-3">
                       <div className="font-medium">{w.name}</div>
                       <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-faint">

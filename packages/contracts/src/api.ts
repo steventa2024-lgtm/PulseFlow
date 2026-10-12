@@ -24,7 +24,10 @@ export interface ApiErrorBody {
 
 export const RunRequestSchema = z.object({
   triggerNodeId: z.string().optional(),
-  items: z.array(z.object({ json: z.record(z.string(), z.unknown()) })).max(10_000).optional(),
+  items: z
+    .array(z.object({ json: z.record(z.string(), z.unknown()) }))
+    .max(10_000)
+    .optional(),
   payload: z.record(z.string(), z.unknown()).optional(),
   /** Run the current draft instead of the published version. */
   useDraft: z.boolean().default(true),

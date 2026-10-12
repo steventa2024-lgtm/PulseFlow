@@ -13,7 +13,13 @@ afterAll(async () => {
 });
 
 const listFiles = (dir: string): string[] =>
-  fs.existsSync(dir) ? fs.readdirSync(dir, { recursive: true, withFileTypes: true }).filter((e) => e.isFile()).map((e) => path.relative(dir, path.join(e.parentPath, e.name)).split(path.sep).join('/')).sort() : [];
+  fs.existsSync(dir)
+    ? fs
+        .readdirSync(dir, { recursive: true, withFileTypes: true })
+        .filter((e) => e.isFile())
+        .map((e) => path.relative(dir, path.join(e.parentPath, e.name)).split(path.sep).join('/'))
+        .sort()
+    : [];
 
 async function setVariables(workflowId: string, variables: Record<string, unknown>) {
   const wf = await host.api<{ settings: { variables: Record<string, unknown> } }>('GET', `/api/workflows/${workflowId}`);
@@ -46,10 +52,24 @@ describe('Tier A templates (offline, end-to-end)', () => {
     const { execution, steps } = await runWorkflow(host, workflowId, { triggerNodeId: 'watch' });
     expect(execution.state, stepSummary(steps)).toBe('succeeded');
     const organized = listFiles(path.join(templateDir, 'organized'));
-    expect(organized).toEqual(expect.arrayContaining(['Images/holiday.jpg', 'Images/holiday (1).jpg', 'Documents/invoice.pdf', 'Documents/notes.txt', 'Archives/backup.zip', 'Other/tool.exe-not', 'undo-manifest.ndjson']));
+    expect(organized).toEqual(
+      expect.arrayContaining([
+        'Images/holiday.jpg',
+        'Images/holiday (1).jpg',
+        'Documents/invoice.pdf',
+        'Documents/notes.txt',
+        'Archives/backup.zip',
+        'Other/tool.exe-not',
+        'undo-manifest.ndjson',
+      ]),
+    );
     expect(fs.readFileSync(path.join(templateDir, 'organized/Images/holiday.jpg'), 'utf8')).toContain('existing file');
     expect(listFiles(path.join(templateDir, 'incoming'))).toEqual([]);
-    const manifest = fs.readFileSync(path.join(templateDir, 'organized/undo-manifest.ndjson'), 'utf8').trim().split('\n').map((l) => JSON.parse(l) as { from: string; to: string });
+    const manifest = fs
+      .readFileSync(path.join(templateDir, 'organized/undo-manifest.ndjson'), 'utf8')
+      .trim()
+      .split('\n')
+      .map((l) => JSON.parse(l) as { from: string; to: string });
     expect(manifest).toHaveLength(5);
     expect(manifest.every((m) => m.from.includes('incoming') && fs.existsSync(m.to))).toBe(true);
   });
@@ -131,7 +151,9 @@ describe('Tier A templates (offline, end-to-end)', () => {
     expect((await host.api('POST', `/api/workflows/${workflowId}/activate`, {})).status).toBe(200);
     const triggers = await host.api<{ nextRunAt?: string }[]>('GET', `/api/workflows/${workflowId}/triggers`);
     const next = new Date(triggers.body[0]!.nextRunAt!);
-    const local = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Berlin', weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false }).format(next);
+    const local = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Berlin', weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false }).format(
+      next,
+    );
     expect(local).toMatch(/^(Mon|Tue|Wed|Thu|Fri) 09:00$/);
     await host.api('POST', `/api/workflows/${workflowId}/deactivate`, {});
     const { execution, steps } = await runWorkflow(host, workflowId, { triggerNodeId: 'schedule' });
@@ -147,8 +169,13 @@ describe('Tier A templates (offline, end-to-end)', () => {
     expect(day).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     const files = listFiles(path.join(r.templateDir, 'backups', day));
     expect(files).toEqual(['backup-manifest.json', 'budget.csv', 'photos/cat.txt', 'plan.md']);
-    expect(fs.readFileSync(path.join(r.templateDir, 'backups', day, 'plan.md'), 'utf8')).toBe(fs.readFileSync(path.join(r.templateDir, 'documents/plan.md'), 'utf8'));
-    const manifest = JSON.parse(fs.readFileSync(path.join(r.templateDir, 'backups', day, 'backup-manifest.json'), 'utf8')) as { count: number; files: { sha256: string; backupSha256: string }[] };
+    expect(fs.readFileSync(path.join(r.templateDir, 'backups', day, 'plan.md'), 'utf8')).toBe(
+      fs.readFileSync(path.join(r.templateDir, 'documents/plan.md'), 'utf8'),
+    );
+    const manifest = JSON.parse(fs.readFileSync(path.join(r.templateDir, 'backups', day, 'backup-manifest.json'), 'utf8')) as {
+      count: number;
+      files: { sha256: string; backupSha256: string }[];
+    };
     expect(manifest.count).toBe(3);
     expect(manifest.files.every((f) => f.sha256 === f.backupSha256)).toBe(true);
     fs.writeFileSync(path.join(r.templateDir, 'backups', day, 'plan.md'), '# Plan\n\n- backup things\n');
@@ -185,10 +212,18 @@ describe('Tier A templates (offline, end-to-end)', () => {
     const triggers = await host.api<{ webhookUrl: string }[]>('GET', `/api/workflows/${workflowId}/triggers`);
     const url = triggers.body[0]!.webhookUrl;
     expect(url).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/hooks\/[A-Za-z0-9_-]{24,}$/);
-    const ok = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Ada', email: 'ada@example.com', message: 'Hi' }) });
+    const ok = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name: 'Ada', email: 'ada@example.com', message: 'Hi' }),
+    });
     expect(ok.status).toBe(200);
     expect(await ok.json()).toMatchObject({ ok: true });
-    const bad = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: '', email: 'not-an-email', admin: true }) });
+    const bad = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name: '', email: 'not-an-email', admin: true }),
+    });
     expect(bad.status).toBe(422);
     const badBody = (await bad.json()) as { ok: boolean; errors: { path: string }[] };
     expect(badBody.ok).toBe(false);
@@ -232,12 +267,18 @@ describe('Tier A templates (offline, end-to-end)', () => {
     const { workflowId, templateDir } = await instantiate(host, 'A13');
     expect((await host.api('POST', `/api/workflows/${workflowId}/activate`, {})).status).toBe(200);
     await new Promise((r) => setTimeout(r, 700));
-    fs.appendFileSync(path.join(templateDir, 'app.log'), '2026-01-05T09:01:00Z INFO all good\n2026-01-05T09:02:00Z ERROR database unreachable\n2026-01-05T09:03:00Z FATAL out of memory\n');
-    const alerts = await eventually(() => {
-      const f = path.join(templateDir, 'alerts.log');
-      const t = fs.existsSync(f) ? fs.readFileSync(f, 'utf8') : '';
-      return t.split('\n').filter(Boolean).length >= 2 ? t : null;
-    }, { timeoutMs: 15_000 });
+    fs.appendFileSync(
+      path.join(templateDir, 'app.log'),
+      '2026-01-05T09:01:00Z INFO all good\n2026-01-05T09:02:00Z ERROR database unreachable\n2026-01-05T09:03:00Z FATAL out of memory\n',
+    );
+    const alerts = await eventually(
+      () => {
+        const f = path.join(templateDir, 'alerts.log');
+        const t = fs.existsSync(f) ? fs.readFileSync(f, 'utf8') : '';
+        return t.split('\n').filter(Boolean).length >= 2 ? t : null;
+      },
+      { timeoutMs: 15_000 },
+    );
     expect(alerts).toContain('ERROR database unreachable');
     expect(alerts).toContain('FATAL out of memory');
     expect(alerts).not.toContain('INFO');

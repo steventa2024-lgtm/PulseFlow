@@ -15,7 +15,10 @@ afterAll(async () => {
 
 const hookGraph = (params: Record<string, unknown>): WorkflowGraph => ({
   schemaVersion: 1,
-  nodes: [node('hook', 'core.webhookTrigger', 'Hook', 0, 0, { method: 'POST', responseMode: 'lastNode', auth: 'none', maxBodyKb: 4, ...params }), node('s', 'core.set', 'Echo', 1, 0, { fields: [{ name: 'got', value: '{{ $json.body.msg }}' }], keepExisting: false })],
+  nodes: [
+    node('hook', 'core.webhookTrigger', 'Hook', 0, 0, { method: 'POST', responseMode: 'lastNode', auth: 'none', maxBodyKb: 4, ...params }),
+    node('s', 'core.set', 'Echo', 1, 0, { fields: [{ name: 'got', value: '{{ $json.body.msg }}' }], keepExisting: false }),
+  ],
   edges: chain('hook', 's'),
 });
 
@@ -27,7 +30,8 @@ async function activeHook(params: Record<string, unknown>): Promise<string> {
   return triggers.body.find((t) => t.webhookPath)!.webhookPath!;
 }
 
-const post = (path: string, body: string, headers: Record<string, string> = {}) => fetch(`${host.url}${path}`, { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body });
+const post = (path: string, body: string, headers: Record<string, string> = {}) =>
+  fetch(`${host.url}${path}`, { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body });
 
 describe('API security', () => {
   it('requires the local token for /api routes', async () => {
@@ -40,17 +44,27 @@ describe('API security', () => {
   it('rejects foreign Host headers (DNS rebinding) and cross-origin writes', async () => {
     const { request } = await import('node:http');
     const status = await new Promise<number>((resolve, reject) => {
-      const req = request({ host: '127.0.0.1', port: host.port, path: '/api/health', headers: { host: 'evil.example:80' } }, (res) => resolve(res.statusCode ?? 0));
+      const req = request({ host: '127.0.0.1', port: host.port, path: '/api/health', headers: { host: 'evil.example:80' } }, (res) =>
+        resolve(res.statusCode ?? 0),
+      );
       req.on('error', reject);
       req.end();
     });
     expect(status).toBe(421);
-    const res = await fetch(`${host.url}/api/workflows`, { method: 'POST', headers: { authorization: 'Bearer test-token-0123456789abcdef', 'content-type': 'application/json', origin: 'https://evil.example' }, body: '{"name":"x"}' });
+    const res = await fetch(`${host.url}/api/workflows`, {
+      method: 'POST',
+      headers: { authorization: 'Bearer test-token-0123456789abcdef', 'content-type': 'application/json', origin: 'https://evil.example' },
+      body: '{"name":"x"}',
+    });
     expect(res.status).toBe(403);
   });
 
   it('never returns credential secrets and redacts them from execution data', async () => {
-    const created = await host.api<{ id: string; fields: string[] }>('POST', '/api/credentials', { name: 'Bearer', type: 'httpBearer', data: { token: 'super-secret-token-value-123' } });
+    const created = await host.api<{ id: string; fields: string[] }>('POST', '/api/credentials', {
+      name: 'Bearer',
+      type: 'httpBearer',
+      data: { token: 'super-secret-token-value-123' },
+    });
     expect(created.status).toBe(200);
     expect(JSON.stringify(created.body)).not.toContain('super-secret');
     const got = await host.api('GET', `/api/credentials/${created.body.id}`);
@@ -59,7 +73,11 @@ describe('API security', () => {
       name: 'leak-test',
       draft: {
         schemaVersion: 1,
-        nodes: [node('t', 'core.manualTrigger', 'T', 0, 0), node('h', 'core.httpRequest', 'Echo auth', 1, 0, { method: 'GET', url: '{{ $app.fixturesUrl }}/api/health', credential: created.body.id }), node('s', 'core.set', 'Leak', 2, 0, { fields: [{ name: 'echo', value: 'token=super-secret-token-value-123' }] })],
+        nodes: [
+          node('t', 'core.manualTrigger', 'T', 0, 0),
+          node('h', 'core.httpRequest', 'Echo auth', 1, 0, { method: 'GET', url: '{{ $app.fixturesUrl }}/api/health', credential: created.body.id }),
+          node('s', 'core.set', 'Leak', 2, 0, { fields: [{ name: 'echo', value: 'token=super-secret-token-value-123' }] }),
+        ],
         edges: chain('t', 'h', 's'),
       },
     });
@@ -72,13 +90,24 @@ describe('API security', () => {
   });
 
   it('resets permissions on import and verifies bundle checksums', async () => {
-    const wf = await host.api<{ id: string }>('POST', '/api/workflows', { name: 'perm', draft: { schemaVersion: 1, nodes: [node('t', 'core.manualTrigger', 'T', 0, 0)], edges: [] } });
-    await host.api('PUT', `/api/workflows/${wf.body.id}/permissions`, { fs: [{ path: '/', access: 'readwrite' }], allowPrivateNetwork: true, notifications: true, email: true, advancedNodes: true });
+    const wf = await host.api<{ id: string }>('POST', '/api/workflows', {
+      name: 'perm',
+      draft: { schemaVersion: 1, nodes: [node('t', 'core.manualTrigger', 'T', 0, 0)], edges: [] },
+    });
+    await host.api('PUT', `/api/workflows/${wf.body.id}/permissions`, {
+      fs: [{ path: '/', access: 'readwrite' }],
+      allowPrivateNetwork: true,
+      notifications: true,
+      email: true,
+      advancedNodes: true,
+    });
     const bundle = (await host.api<Record<string, unknown>>('POST', '/api/export', { ids: [wf.body.id] })).body;
     const tampered = JSON.parse(JSON.stringify(bundle)) as { workflows: { settings: Record<string, unknown> }[] };
     tampered.workflows[0]!.settings.permissions = { fs: [{ path: '/', access: 'readwrite' }], allowPrivateNetwork: true };
     expect((await host.api('POST', '/api/import', tampered)).status).toBe(400);
-    const imported = await host.api<{ workflows: { id: string; active: boolean; settings: { permissions: { fs: unknown[]; allowPrivateNetwork: boolean; email: boolean } } }[] }>('POST', '/api/import', bundle);
+    const imported = await host.api<{
+      workflows: { id: string; active: boolean; settings: { permissions: { fs: unknown[]; allowPrivateNetwork: boolean; email: boolean } } }[];
+    }>('POST', '/api/import', bundle);
     expect(imported.status).toBe(200);
     const w = imported.body.workflows[0]!;
     expect(w.active).toBe(false);
@@ -94,7 +123,10 @@ describe('versions', () => {
     const wf = await host.api<{ id: string; draftRevision: number }>('POST', '/api/workflows', { name: 'versions', draft: draft1 });
     const v1 = await host.api<{ id: string; versionNumber: number }>('POST', `/api/workflows/${wf.body.id}/publish`, { note: 'first' });
     expect(v1.body.versionNumber).toBe(1);
-    const patched = await host.api<{ draftRevision: number }>('PATCH', `/api/workflows/${wf.body.id}`, { draft: { ...draft1, nodes: [...draft1.nodes, node('n', 'core.noop', 'N', 1, 0)] }, baseRevision: wf.body.draftRevision });
+    const patched = await host.api<{ draftRevision: number }>('PATCH', `/api/workflows/${wf.body.id}`, {
+      draft: { ...draft1, nodes: [...draft1.nodes, node('n', 'core.noop', 'N', 1, 0)] },
+      baseRevision: wf.body.draftRevision,
+    });
     expect(patched.status).toBe(200);
     expect((await host.api('PATCH', `/api/workflows/${wf.body.id}`, { name: 'stale', baseRevision: wf.body.draftRevision })).status).toBe(409);
     await host.api('POST', `/api/workflows/${wf.body.id}/publish`, { note: 'second' });
@@ -123,7 +155,11 @@ describe('webhooks', () => {
   });
 
   it('verifies HMAC signatures', async () => {
-    const cred = await host.api<{ id: string }>('POST', '/api/credentials', { name: 'hook secret', type: 'webhookSecret', data: { secret: 'shh-its-a-secret' } });
+    const cred = await host.api<{ id: string }>('POST', '/api/credentials', {
+      name: 'hook secret',
+      type: 'webhookSecret',
+      data: { secret: 'shh-its-a-secret' },
+    });
     const path = await activeHook({ auth: 'hmac', secretCredential: cred.body.id, headerName: 'x-signature' });
     const body = JSON.stringify({ msg: 'signed' });
     expect((await post(path, body, { 'x-signature': 'sha256=deadbeef' })).status).toBe(401);
@@ -153,7 +189,12 @@ describe('server mode auth', () => {
     const srv = await startTestHost({ mode: 'server', fixtures: false });
     try {
       expect((await srv.api('GET', '/api/workflows')).status).toBe(401);
-      const setup = await srv.api<{ token: string }>('POST', '/api/auth/setup', { email: 'owner@example.com', name: 'Owner', password: 'long-enough-password' }, null);
+      const setup = await srv.api<{ token: string }>(
+        'POST',
+        '/api/auth/setup',
+        { email: 'owner@example.com', name: 'Owner', password: 'long-enough-password' },
+        null,
+      );
       expect(setup.status).toBe(200);
       expect((await srv.api('POST', '/api/auth/setup', { email: 'x@example.com', name: 'X', password: 'long-enough-password' }, null)).status).toBe(409);
       const owner = setup.body.token;
@@ -172,9 +213,15 @@ describe('server mode auth', () => {
 
 describe('events', () => {
   it('streams execution events over SSE', async () => {
-    const wf = await host.api<{ id: string }>('POST', '/api/workflows', { name: 'sse', draft: { schemaVersion: 1, nodes: [node('t', 'core.manualTrigger', 'T', 0, 0)], edges: [] } });
+    const wf = await host.api<{ id: string }>('POST', '/api/workflows', {
+      name: 'sse',
+      draft: { schemaVersion: 1, nodes: [node('t', 'core.manualTrigger', 'T', 0, 0)], edges: [] },
+    });
     const controller = new AbortController();
-    const res = await fetch(`${host.url}/api/events?workflowId=${wf.body.id}`, { headers: { authorization: 'Bearer test-token-0123456789abcdef' }, signal: controller.signal });
+    const res = await fetch(`${host.url}/api/events?workflowId=${wf.body.id}`, {
+      headers: { authorization: 'Bearer test-token-0123456789abcdef' },
+      signal: controller.signal,
+    });
     const reader = res.body!.getReader();
     await host.api('POST', `/api/workflows/${wf.body.id}/run`, {});
     let text = '';

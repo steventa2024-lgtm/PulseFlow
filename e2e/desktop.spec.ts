@@ -93,7 +93,10 @@ test('connected template demo mode talks only to the local fixture server', asyn
   await expect(page.getByTestId('execution-header')).toHaveAttribute('data-state', 'succeeded', { timeout: 30_000 });
   await page.getByRole('tab', { name: /Logs/ }).click();
   await expect(page.getByTestId('logs')).toContainText('release-digest.md');
-  await page.getByTestId('canvas').locator('.react-flow__pane').click({ position: { x: 20, y: 20 } });
+  await page
+    .getByTestId('canvas')
+    .locator('.react-flow__pane')
+    .click({ position: { x: 20, y: 20 } });
   await expect(page.getByTestId('variables')).toContainText('apiBaseUrl');
   const apiBase = await page.getByTestId('var-apiBaseUrl').inputValue();
   expect(apiBase).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/demo\/github$/);
@@ -127,7 +130,11 @@ test('executions page and command palette', async ({ page }) => {
   await page.keyboard.type('Go to Executions');
   await page.keyboard.press('Enter');
   await expect(page.getByTestId('executions-page')).toContainText('Hello Automation');
-  await page.getByTestId('executions-page').getByRole('button', { name: /Hello Automation/ }).first().click();
+  await page
+    .getByTestId('executions-page')
+    .getByRole('button', { name: /Hello Automation/ })
+    .first()
+    .click();
   await expect(page.getByTestId('executions-page')).toContainText('Save Greeting');
   await shot(page, '09-executions');
   await page.getByTestId('nav-settings').click();

@@ -26,7 +26,13 @@ afterAll(() => fs.rmSync(tmp, { recursive: true, force: true }));
 describe('redaction', () => {
   it('redacts sensitive keys, known secrets, bearer tokens and URL credentials', () => {
     const out = redact(
-      { password: 'hunter2', nested: { apiKey: 'k', ok: 'visible' }, text: 'token is s3cr3t-value', auth: 'Bearer abc.def.ghi-123', url: 'https://user:pw@example.com/x' },
+      {
+        password: 'hunter2',
+        nested: { apiKey: 'k', ok: 'visible' },
+        text: 'token is s3cr3t-value',
+        auth: 'Bearer abc.def.ghi-123',
+        url: 'https://user:pw@example.com/x',
+      },
       { secrets: ['s3cr3t-value'] },
     );
     expect(out.password).toBe(REDACTED);
@@ -83,7 +89,8 @@ describe('filesystem policy', () => {
 
 describe('network policy', () => {
   it('classifies private addresses', () => {
-    for (const ip of ['127.0.0.1', '10.1.2.3', '192.168.0.10', '172.16.5.4', '169.254.169.254', '::1', 'fd00::1', '0.0.0.0']) expect(isPrivateAddress(ip), ip).toBe(true);
+    for (const ip of ['127.0.0.1', '10.1.2.3', '192.168.0.10', '172.16.5.4', '169.254.169.254', '::1', 'fd00::1', '0.0.0.0'])
+      expect(isPrivateAddress(ip), ip).toBe(true);
     for (const ip of ['8.8.8.8', '1.1.1.1', '2606:4700::1111']) expect(isPrivateAddress(ip), ip).toBe(false);
   });
 

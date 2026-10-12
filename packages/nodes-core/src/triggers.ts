@@ -51,7 +51,16 @@ export const scheduleTrigger = defineNode(
           { label: 'Cron expression', value: 'cron' },
         ],
       },
-      { name: 'intervalSeconds', label: 'Interval (seconds)', type: 'number', default: 300, min: 1, max: 31_536_000, noExpression: true, showIf: { param: 'mode', equals: ['interval'] } },
+      {
+        name: 'intervalSeconds',
+        label: 'Interval (seconds)',
+        type: 'number',
+        default: 300,
+        min: 1,
+        max: 31_536_000,
+        noExpression: true,
+        showIf: { param: 'mode', equals: ['interval'] },
+      },
       {
         name: 'cron',
         label: 'Cron expression',
@@ -129,8 +138,22 @@ export const webhookTrigger = defineNode(
           { label: 'HMAC-SHA256 signature', value: 'hmac' },
         ],
       },
-      { name: 'secretCredential', label: 'Secret', type: 'credential', credentialType: 'webhookSecret', showIf: { param: 'auth', equals: ['header', 'hmac'] }, required: true },
-      { name: 'headerName', label: 'Header name', type: 'string', default: 'x-pulseflow-signature', noExpression: true, showIf: { param: 'auth', equals: ['header', 'hmac'] } },
+      {
+        name: 'secretCredential',
+        label: 'Secret',
+        type: 'credential',
+        credentialType: 'webhookSecret',
+        showIf: { param: 'auth', equals: ['header', 'hmac'] },
+        required: true,
+      },
+      {
+        name: 'headerName',
+        label: 'Header name',
+        type: 'string',
+        default: 'x-pulseflow-signature',
+        noExpression: true,
+        showIf: { param: 'auth', equals: ['header', 'hmac'] },
+      },
       { name: 'maxBodyKb', label: 'Max body size (KB)', type: 'number', default: 1024, min: 1, max: 20_480, noExpression: true },
     ],
     sideEffects: 'Opens an HTTP endpoint on the local PulseFlow server while the workflow is active.',
@@ -171,7 +194,9 @@ export const fileWatchTrigger = defineNode(
     const p = ctx.param<string>('path');
     const st = await ctx.services.fs.stat(p);
     const text = ctx.param<string>('emit') === 'appended' ? await ctx.services.fs.readText(p, 5 * 1024 * 1024) : undefined;
-    return { main: [{ json: { path: st.path, event: 'manual', size: st.size, modifiedAt: st.modifiedAt, ...(text !== undefined ? { appendedText: text } : {}) } }] };
+    return {
+      main: [{ json: { path: st.path, event: 'manual', size: st.size, modifiedAt: st.modifiedAt, ...(text !== undefined ? { appendedText: text } : {}) } }],
+    };
   },
 );
 
@@ -189,7 +214,16 @@ export const folderWatchTrigger = defineNode(
       { name: 'recursive', label: 'Include sub-folders', type: 'boolean', default: false, noExpression: true },
       { name: 'events', label: 'Events', type: 'stringList', default: ['created'], noExpression: true, description: 'Any of: created, modified, deleted' },
       { name: 'pollSeconds', label: 'Check every (seconds)', type: 'number', default: 2, min: 1, max: 3600, noExpression: true },
-      { name: 'settleSeconds', label: 'Wait until unchanged for (seconds)', type: 'number', default: 1, min: 0, max: 600, noExpression: true, description: 'Avoids picking up files that are still being written.' },
+      {
+        name: 'settleSeconds',
+        label: 'Wait until unchanged for (seconds)',
+        type: 'number',
+        default: 1,
+        min: 0,
+        max: 600,
+        noExpression: true,
+        description: 'Avoids picking up files that are still being written.',
+      },
     ],
   },
   async (ctx) => {
@@ -294,7 +328,16 @@ export const errorTrigger = defineNode(
   async (ctx) => ({
     main: ctx.items.length
       ? ctx.items
-      : [{ json: { workflowId: 'example', workflowName: 'Example', executionId: 'exe_example', error: { code: 'EXAMPLE', message: 'Example failure (manual test)' } } }],
+      : [
+          {
+            json: {
+              workflowId: 'example',
+              workflowName: 'Example',
+              executionId: 'exe_example',
+              error: { code: 'EXAMPLE', message: 'Example failure (manual test)' },
+            },
+          },
+        ],
   }),
 );
 

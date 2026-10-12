@@ -34,11 +34,21 @@ export function SettingsPage() {
               </Row>
               <Row title="Run history retention" desc="Finished runs older than this are deleted on startup.">
                 <div className="flex items-center gap-2">
-                  <Input type="number" min={1} max={3650} defaultValue={s.retentionDays} className="w-20" onBlur={(e) => Number(e.target.value) !== s.retentionDays && void update({ retentionDays: Math.max(1, Number(e.target.value) || 30) })} />
+                  <Input
+                    type="number"
+                    min={1}
+                    max={3650}
+                    defaultValue={s.retentionDays}
+                    className="w-20"
+                    onBlur={(e) => Number(e.target.value) !== s.retentionDays && void update({ retentionDays: Math.max(1, Number(e.target.value) || 30) })}
+                  />
                   <span className="text-xs text-muted">days</span>
                 </div>
               </Row>
-              <Row title="Environment variables available to expressions" desc="Only variables listed here can be read with {{ $env.NAME }}. Everything else is hidden.">
+              <Row
+                title="Environment variables available to expressions"
+                desc="Only variables listed here can be read with {{ $env.NAME }}. Everything else is hidden."
+              >
                 <Input
                   className="w-64 font-mono text-xs"
                   placeholder="API_BASE, MY_FOLDER"
@@ -62,8 +72,9 @@ export function SettingsPage() {
                     <Switch checked={s.advancedNodes} onChange={(v) => void update({ advancedNodes: v })} label="Advanced nodes" />
                   </div>
                   <p className="mt-1 text-xs leading-relaxed text-muted">
-                    Off by default. These nodes run programs or scripts with your Windows account’s full rights. Worker threads and Node’s <code>vm</code> are <b>not</b> a security sandbox, so only enable this for workflows you wrote or fully
-                    trust. Each workflow must also be granted “Advanced nodes” in its permission review.
+                    Off by default. These nodes run programs or scripts with your Windows account’s full rights. Worker threads and Node’s <code>vm</code> are{' '}
+                    <b>not</b> a security sandbox, so only enable this for workflows you wrote or fully trust. Each workflow must also be granted “Advanced
+                    nodes” in its permission review.
                   </p>
                 </div>
               </div>
@@ -75,7 +86,10 @@ export function SettingsPage() {
           <div className="mb-3 flex items-center gap-2 text-[13px] font-medium">
             <HardDriveDownload size={15} /> Backup
           </div>
-          <p className="mb-3 text-xs text-muted">Writes a consistent copy of the database (workflows, versions, run history and encrypted credentials). Restoring credentials needs this computer’s key.</p>
+          <p className="mb-3 text-xs text-muted">
+            Writes a consistent copy of the database (workflows, versions, run history and encrypted credentials). Restoring credentials needs this computer’s
+            key.
+          </p>
           <Button
             onClick={async () => {
               try {

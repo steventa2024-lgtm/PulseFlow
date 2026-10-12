@@ -36,7 +36,10 @@ function FlowNodeView({ id, data, selected }: NodeProps<FlowNodeType>) {
       )}
     >
       <div className="flex items-center gap-2.5 px-3 py-2.5">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px]" style={{ background: `${color}1f`, color, boxShadow: `inset 0 0 0 1px ${color}40` }}>
+        <div
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px]"
+          style={{ background: `${color}1f`, color, boxShadow: `inset 0 0 0 1px ${color}40` }}
+        >
           <NodeIcon name={entry?.icon ?? 'Boxes'} size={16} />
         </div>
         <div className="min-w-0 flex-1">

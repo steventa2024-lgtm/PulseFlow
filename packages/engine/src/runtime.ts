@@ -12,7 +12,7 @@ import {
   type WorkflowSettings,
 } from '@pulseflow/contracts';
 import { abortError, type Clock } from './clock';
-import { classifyError, GraphValidationError, isAbortError, NodeError, toExecutionError, WaitRequest } from './errors';
+import { classifyError, GraphValidationError, NodeError, toExecutionError, WaitRequest } from './errors';
 import { formatDate, resolveDeep, resolveTemplate, type ExpressionScope } from './expressions';
 import type { NodeDefinition, NodeExecutionContext, NodeOutput, NodeRegistry, NodeServices } from './types';
 import { validateGraph } from './validate';
@@ -177,7 +177,11 @@ export class WorkflowRuntime {
     const publishNode = (node: NodeInstance, out: NodeOutput) => {
       outputs[node.id] = out;
       const firstPort = Object.values(out).find((items) => items.length > 0) ?? [];
-      const entry = { json: firstPort[0]?.json ?? {}, items: firstPort.map((i) => i.json), outputs: Object.fromEntries(Object.entries(out).map(([k, v]) => [k, v.map((i) => i.json)])) };
+      const entry = {
+        json: firstPort[0]?.json ?? {},
+        items: firstPort.map((i) => i.json),
+        outputs: Object.fromEntries(Object.entries(out).map(([k, v]) => [k, v.map((i) => i.json)])),
+      };
       nodeRoot[node.name] = entry;
       nodeRoot[node.id] = entry;
     };
@@ -224,7 +228,9 @@ export class WorkflowRuntime {
           input: inputs,
           output: out,
           error: null,
-          logs: [{ ts: now, level: 'info', message: seeded ? (opts.seedNote ?? 'Output reused from previous run') : 'Pinned test data used (node not executed)' }],
+          logs: [
+            { ts: now, level: 'info', message: seeded ? (opts.seedNote ?? 'Output reused from previous run') : 'Pinned test data used (node not executed)' },
+          ],
           retryInMs: null,
         });
         publishNode(node, out);
@@ -533,7 +539,7 @@ export class WorkflowRuntime {
       services,
       ...(opts.resume && opts.resume.nodeId === node.id ? { resumeAt: opts.resume.resumeAt } : {}),
       rawParam: (name) => node.parameters[name] ?? paramDefault(name),
-      param: <T,>(name: string, itemIndex = 0): T => {
+      param: <T>(name: string, itemIndex = 0): T => {
         const raw = node.parameters[name] ?? paramDefault(name);
         const pdef = def.manifest.parameters.find((p) => p.name === name);
         if (pdef?.noExpression) return raw as T;

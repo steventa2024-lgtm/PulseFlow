@@ -110,14 +110,25 @@ export class ExecutionService {
   }
 
   #emitExecution(rec: Pick<ExecutionRecord, 'id' | 'workflowId'>, state: ExecutionState, error?: ExecutionError | null): void {
-    this.#emit({ type: 'execution.updated', executionId: rec.id, workflowId: rec.workflowId, state, ts: this.deps.clock.now().toISOString(), error: error ?? null });
+    this.#emit({
+      type: 'execution.updated',
+      executionId: rec.id,
+      workflowId: rec.workflowId,
+      state,
+      ts: this.deps.clock.now().toISOString(),
+      error: error ?? null,
+    });
   }
 
   enqueue(input: EnqueueInput): ExecutionRecord {
     const { store } = this.deps;
     if (store.executions.countQueued(input.workflowId) >= MAX_QUEUED_PER_WORKFLOW) {
       store.deadLetters.add({ workflowId: input.workflowId, reason: 'QUEUE_FULL', payload: { triggerNodeId: input.triggerNodeId, items: input.items } });
-      throw new HttpError(429, 'QUEUE_FULL', `Workflow already has ${MAX_QUEUED_PER_WORKFLOW} queued runs; the trigger payload was moved to the dead-letter queue`);
+      throw new HttpError(
+        429,
+        'QUEUE_FULL',
+        `Workflow already has ${MAX_QUEUED_PER_WORKFLOW} queued runs; the trigger payload was moved to the dead-letter queue`,
+      );
     }
     const rec = store.executions.create({
       workflowId: input.workflowId,
@@ -179,7 +190,7 @@ export class ExecutionService {
     const saveMode = rec.settings.saveExecutionData;
     return {
       step: async (u: StepUpdate) => {
-        const scrub = <T,>(v: T): T => redact(v, { secrets });
+        const scrub = <T>(v: T): T => redact(v, { secrets });
         const input = truncateForStorage(u.input ? scrub(u.input) : null);
         const redactedOut = u.output ? scrub(u.output) : null;
         const output = truncateForStorage(redactedOut);
@@ -221,7 +232,15 @@ export class ExecutionService {
         });
       },
       log: (nodeId, entry) => {
-        bus.emit({ type: 'step.log', executionId: rec.id, workflowId: rec.workflowId, nodeId, level: entry.level, message: redact(entry.message, { secrets }), ts: entry.ts });
+        bus.emit({
+          type: 'step.log',
+          executionId: rec.id,
+          workflowId: rec.workflowId,
+          nodeId,
+          level: entry.level,
+          message: redact(entry.message, { secrets }),
+          ts: entry.ts,
+        });
       },
     };
   }
@@ -294,7 +313,12 @@ export class ExecutionService {
     }
     store.executions.setState(rec.id, outcome.state as ExecutionState, { error: outcome.error, finishedAt: now });
     if (outcome.state === 'failed' && rec.mode === 'trigger') {
-      store.deadLetters.add({ workflowId: rec.workflowId, executionId: rec.id, reason: outcome.error?.code ?? 'FAILED', payload: { triggerNodeId: rec.triggerNodeId, items: rec.triggerItems } });
+      store.deadLetters.add({
+        workflowId: rec.workflowId,
+        executionId: rec.id,
+        reason: outcome.error?.code ?? 'FAILED',
+        payload: { triggerNodeId: rec.triggerNodeId, items: rec.triggerItems },
+      });
     }
     this.#emitExecution(rec, outcome.state as ExecutionState, outcome.error);
     const final = store.executions.get(rec.id);

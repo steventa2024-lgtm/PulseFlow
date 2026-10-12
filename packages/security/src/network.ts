@@ -78,9 +78,7 @@ export async function assertUrlAllowed(rawUrl: string, policy: NetworkPolicy): P
   }
   const addresses = net.isIP(host) ? [host] : (await dns.lookup(host, { all: true })).map((a) => a.address);
   if (addresses.length === 0 || addresses.some(isPrivateAddress)) {
-    throw new NetworkPolicyError(
-      `Blocked request to private/loopback address (${host}). Enable "Allow private network" in workflow permissions if intended.`,
-    );
+    throw new NetworkPolicyError(`Blocked request to private/loopback address (${host}). Enable "Allow private network" in workflow permissions if intended.`);
   }
   return url;
 }

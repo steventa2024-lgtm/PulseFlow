@@ -6,41 +6,12 @@ export interface Item {
   json: Record<string, unknown>;
 }
 
-export type NodeCategory =
-  | 'trigger'
-  | 'logic'
-  | 'data'
-  | 'files'
-  | 'network'
-  | 'developer'
-  | 'ai'
-  | 'notify'
-  | 'connector';
+export type NodeCategory = 'trigger' | 'logic' | 'data' | 'files' | 'network' | 'developer' | 'ai' | 'notify' | 'connector';
 
-export type NodePermission =
-  | 'fs.read'
-  | 'fs.write'
-  | 'network'
-  | 'notify'
-  | 'email'
-  | 'kv'
-  | 'subworkflow'
-  | 'advanced';
+export type NodePermission = 'fs.read' | 'fs.write' | 'network' | 'notify' | 'email' | 'kv' | 'subworkflow' | 'advanced';
 
 export type ParamType =
-  | 'string'
-  | 'text'
-  | 'number'
-  | 'boolean'
-  | 'select'
-  | 'json'
-  | 'keyvalue'
-  | 'path'
-  | 'stringList'
-  | 'credential'
-  | 'conditions'
-  | 'rules'
-  | 'code';
+  'string' | 'text' | 'number' | 'boolean' | 'select' | 'json' | 'keyvalue' | 'path' | 'stringList' | 'credential' | 'conditions' | 'rules' | 'code';
 
 export interface ParamOption {
   label: string;
@@ -72,17 +43,7 @@ export interface PortDef {
   label?: string;
 }
 
-export type TriggerKind =
-  | 'manual'
-  | 'schedule'
-  | 'interval'
-  | 'webhook'
-  | 'fileWatch'
-  | 'folderWatch'
-  | 'poll'
-  | 'startup'
-  | 'error'
-  | 'called';
+export type TriggerKind = 'manual' | 'schedule' | 'interval' | 'webhook' | 'fileWatch' | 'folderWatch' | 'poll' | 'startup' | 'error' | 'called';
 
 export interface NodeManifest {
   type: string;
@@ -123,11 +84,7 @@ export function getNodeOutputs(manifest: NodeManifest, parameters: Record<string
   return outputs;
 }
 
-export function getNodeOutputsWithError(
-  manifest: NodeManifest,
-  parameters: Record<string, unknown>,
-  onError: string | undefined,
-): PortDef[] {
+export function getNodeOutputsWithError(manifest: NodeManifest, parameters: Record<string, unknown>, onError: string | undefined): PortDef[] {
   const outputs = getNodeOutputs(manifest, parameters);
   if (onError === 'route') outputs.push({ name: 'error', label: 'Error' });
   return outputs;

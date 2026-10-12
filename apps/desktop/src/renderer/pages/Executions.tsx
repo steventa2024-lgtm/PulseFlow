@@ -21,14 +21,20 @@ export function ExecutionsPage({ initialId }: { initialId?: string }) {
   const [q, setQ] = useState('');
   const [selected, setSelected] = useState<string | null>(initialId ?? null);
   const [view, setView] = useState<'runs' | 'dlq'>('runs');
-  const list = useQuery({ queryKey: ['executions', { state, q }], queryFn: () => api.executions({ ...(state !== 'all' ? { state } : {}), ...(q ? { search: q } : {}), limit: 200 }) });
+  const list = useQuery({
+    queryKey: ['executions', { state, q }],
+    queryFn: () => api.executions({ ...(state !== 'all' ? { state } : {}), ...(q ? { search: q } : {}), limit: 200 }),
+  });
   const dlq = useQuery({ queryKey: ['dead-letters'], queryFn: api.deadLetters, enabled: view === 'dlq' });
-  useEngineEvents((e) => {
-    if (e.type === 'execution.updated') {
-      void qc.invalidateQueries({ queryKey: ['executions'] });
-      if (e.executionId === selected) void qc.invalidateQueries({ queryKey: ['execution', selected] });
-    }
-  }, [selected]);
+  useEngineEvents(
+    (e) => {
+      if (e.type === 'execution.updated') {
+        void qc.invalidateQueries({ queryKey: ['executions'] });
+        if (e.executionId === selected) void qc.invalidateQueries({ queryKey: ['execution', selected] });
+      }
+    },
+    [selected],
+  );
   const detail = useQuery({ queryKey: ['execution', selected], queryFn: () => api.execution(selected!), enabled: !!selected });
 
   return (
@@ -55,7 +61,10 @@ export function ExecutionsPage({ initialId }: { initialId?: string }) {
               </div>
             </>
           ) : (
-            <p className="text-xs text-muted">Trigger events that could not be run (for example, a queue overflow or a failed run with dead-lettering enabled). Replay them once the cause is fixed.</p>
+            <p className="text-xs text-muted">
+              Trigger events that could not be run (for example, a queue overflow or a failed run with dead-lettering enabled). Replay them once the cause is
+              fixed.
+            </p>
           )}
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto">
@@ -69,10 +78,19 @@ export function ExecutionsPage({ initialId }: { initialId?: string }) {
                   </div>
                   <div className="mt-1 text-bad">{d.reason}</div>
                   <div className="mt-2 flex gap-2">
-                    <Button size="sm" icon={<RotateCcw size={12} />} onClick={async () => (await api.replayDeadLetter(d.id), toast.ok('Replayed'), void qc.invalidateQueries({ queryKey: ['dead-letters'] }))}>
+                    <Button
+                      size="sm"
+                      icon={<RotateCcw size={12} />}
+                      onClick={async () => (await api.replayDeadLetter(d.id), toast.ok('Replayed'), void qc.invalidateQueries({ queryKey: ['dead-letters'] }))}
+                    >
                       Replay
                     </Button>
-                    <Button size="sm" variant="ghost" icon={<Trash2 size={12} />} onClick={async () => (await api.deleteDeadLetter(d.id), void qc.invalidateQueries({ queryKey: ['dead-letters'] }))}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      icon={<Trash2 size={12} />}
+                      onClick={async () => (await api.deleteDeadLetter(d.id), void qc.invalidateQueries({ queryKey: ['dead-letters'] }))}
+                    >
                       Discard
                     </Button>
                   </div>
@@ -118,7 +136,8 @@ export function ExecutionsPage({ initialId }: { initialId?: string }) {
                   <StateBadge state={detail.data.state} />
                 </div>
                 <div className="mt-1 text-xs text-faint">
-                  {dateTime(detail.data.queuedAt)} · {detail.data.mode} · {duration(executionDuration(detail.data))} · engine {detail.data.engineVersion} · <span className="font-mono">{detail.data.id}</span>
+                  {dateTime(detail.data.queuedAt)} · {detail.data.mode} · {duration(executionDuration(detail.data))} · engine {detail.data.engineVersion} ·{' '}
+                  <span className="font-mono">{detail.data.id}</span>
                 </div>
               </div>
               <div className="flex gap-2">
@@ -126,7 +145,12 @@ export function ExecutionsPage({ initialId }: { initialId?: string }) {
                   Open workflow
                 </Button>
                 {detail.data.state !== 'succeeded' && ['failed', 'cancelled', 'timed_out'].includes(detail.data.state) ? (
-                  <Button size="sm" variant="primary" icon={<RotateCcw size={12} />} onClick={async () => setSelected((await api.retry(detail.data!.id, 'failed')).executionId)}>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    icon={<RotateCcw size={12} />}
+                    onClick={async () => setSelected((await api.retry(detail.data!.id, 'failed')).executionId)}
+                  >
                     Retry from failed
                   </Button>
                 ) : null}
@@ -174,7 +198,10 @@ export function ExecutionsPage({ initialId }: { initialId?: string }) {
                                 .join(' · ')}
                             </summary>
                             <div className="mt-2 w-[min(560px,50vw)]">
-                              <JsonView value={Object.fromEntries(Object.entries(s.output).map(([p, l]) => [p, l.slice(0, 20).map((i) => i.json)]))} maxHeight={260} />
+                              <JsonView
+                                value={Object.fromEntries(Object.entries(s.output).map(([p, l]) => [p, l.slice(0, 20).map((i) => i.json)]))}
+                                maxHeight={260}
+                              />
                             </div>
                           </details>
                         ) : (

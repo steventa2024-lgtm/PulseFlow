@@ -36,7 +36,12 @@ function png(size, rgba) {
     raw[y * (size * 4 + 1)] = 0;
     rgba.copy(raw, y * (size * 4 + 1) + 1, y * size * 4, (y + 1) * size * 4);
   }
-  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', zlib.deflateSync(raw, { level: 9 })), chunk('IEND', Buffer.alloc(0))]);
+  return Buffer.concat([
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    chunk('IHDR', ihdr),
+    chunk('IDAT', zlib.deflateSync(raw, { level: 9 })),
+    chunk('IEND', Buffer.alloc(0)),
+  ]);
 }
 
 const mix = (a, b, t) => a + (b - a) * t;
@@ -61,19 +66,28 @@ function render(size, { tile = true } = {}) {
   const ss = 4;
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      let r = 0, g = 0, b = 0, a = 0;
+      let r = 0,
+        g = 0,
+        b = 0,
+        a = 0;
       for (let sy = 0; sy < ss; sy++) {
         for (let sx = 0; sx < ss; sx++) {
           const u = (x + (sx + 0.5) / ss) / size;
           const v = (y + (sy + 0.5) / ss) / size;
-          let cr = 0, cg = 0, cb = 0, ca = 0;
+          let cr = 0,
+            cg = 0,
+            cb = 0,
+            ca = 0;
           if (tile) {
             const rad = 0.22;
             const qx = Math.max(Math.abs(u - 0.5) - (0.5 - rad - 0.02), 0);
             const qy = Math.max(Math.abs(v - 0.5) - (0.5 - rad - 0.02), 0);
             if (Math.hypot(qx, qy) <= rad) {
               const t = (u + v) / 2;
-              cr = mix(16, 11, t); cg = mix(23, 15, t); cb = mix(34, 22, t); ca = 255;
+              cr = mix(16, 11, t);
+              cg = mix(23, 15, t);
+              cb = mix(34, 22, t);
+              ca = 255;
             }
           }
           let d = Infinity;
@@ -81,14 +95,23 @@ function render(size, { tile = true } = {}) {
           const width = tile ? 0.045 : 0.09;
           if (d <= width) {
             const t = Math.max(0, Math.min(1, (u - 0.14) / 0.72));
-            cr = mix(34, 59, t); cg = mix(211, 130, t); cb = mix(238, 246, t); ca = 255;
+            cr = mix(34, 59, t);
+            cg = mix(211, 130, t);
+            cb = mix(238, 246, t);
+            ca = 255;
           }
-          r += cr; g += cg; b += cb; a += ca;
+          r += cr;
+          g += cg;
+          b += cb;
+          a += ca;
         }
       }
       const n = ss * ss;
       const o = (y * size + x) * 4;
-      buf[o] = r / n; buf[o + 1] = g / n; buf[o + 2] = b / n; buf[o + 3] = a / n;
+      buf[o] = r / n;
+      buf[o + 1] = g / n;
+      buf[o + 2] = b / n;
+      buf[o + 3] = a / n;
     }
   }
   return png(size, buf);

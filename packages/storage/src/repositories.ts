@@ -28,7 +28,11 @@ const pj = <T>(v: string | null | undefined, fallback: T): T => {
 const nowIso = () => new Date().toISOString();
 
 export function graphChecksum(graph: WorkflowGraph, settings?: WorkflowSettings): string {
-  return crypto.createHash('sha256').update(JSON.stringify({ graph, settings: settings ?? null })).digest('hex').slice(0, 16);
+  return crypto
+    .createHash('sha256')
+    .update(JSON.stringify({ graph, settings: settings ?? null }))
+    .digest('hex')
+    .slice(0, 16);
 }
 
 interface WorkflowRow {
@@ -123,11 +127,7 @@ export class WorkflowRepo {
     return this.db.all<WorkflowRow>('SELECT * FROM workflows WHERE active = 1').map(toWorkflow);
   }
 
-  update(
-    id: string,
-    patch: Partial<Pick<Workflow, 'name' | 'description' | 'tags' | 'draft' | 'settings'>>,
-    baseRevision?: number,
-  ): Workflow {
+  update(id: string, patch: Partial<Pick<Workflow, 'name' | 'description' | 'tags' | 'draft' | 'settings'>>, baseRevision?: number): Workflow {
     return this.db.transaction(() => {
       const current = this.get(id);
       if (!current) throw new Error(`Workflow ${id} not found`);
@@ -193,7 +193,14 @@ function toVersion(r: VersionRow): WorkflowVersion {
 export class VersionRepo {
   constructor(private readonly db: Database) {}
 
-  create(input: { workflowId: string; graph: WorkflowGraph; settings: WorkflowSettings; note: string; createdBy: string; published: boolean }): WorkflowVersion {
+  create(input: {
+    workflowId: string;
+    graph: WorkflowGraph;
+    settings: WorkflowSettings;
+    note: string;
+    createdBy: string;
+    published: boolean;
+  }): WorkflowVersion {
     return this.db.transaction(() => {
       const max = this.db.get<{ n: number | null }>('SELECT MAX(version_number) AS n FROM workflow_versions WHERE workflow_id = ?', input.workflowId);
       const id = newId('ver');
@@ -599,7 +606,11 @@ export class KvRepo {
 
   list(namespace: string, prefix = ''): { key: string; value: unknown }[] {
     return this.db
-      .all<{ key: string; value: string }>('SELECT key, value FROM kv_store WHERE namespace = ? AND key LIKE ? ORDER BY key', namespace, `${prefix.replace(/[%_]/g, '')}%`)
+      .all<{ key: string; value: string }>(
+        'SELECT key, value FROM kv_store WHERE namespace = ? AND key LIKE ? ORDER BY key',
+        namespace,
+        `${prefix.replace(/[%_]/g, '')}%`,
+      )
       .map((r) => ({ key: r.key, value: pj(r.value, null) }));
   }
 }
@@ -632,7 +643,10 @@ export class AuditRepo {
 
   list(limit = 200): AuditEvent[] {
     return this.db
-      .all<{ id: string; ts: string; actor: string; action: string; target: string; details: string }>('SELECT * FROM audit_events ORDER BY ts DESC, rowid DESC LIMIT ?', Math.min(limit, 1000))
+      .all<{ id: string; ts: string; actor: string; action: string; target: string; details: string }>(
+        'SELECT * FROM audit_events ORDER BY ts DESC, rowid DESC LIMIT ?',
+        Math.min(limit, 1000),
+      )
       .map((r) => ({ ...r, details: pj(r.details, {}) }));
   }
 }
@@ -706,7 +720,11 @@ export class WebhookRepo {
   constructor(private readonly db: Database) {}
 
   ensure(workflowId: string, nodeId: string, token: string): { id: string; token: string } {
-    const existing = this.db.get<{ id: string; token: string }>('SELECT id, token FROM webhook_endpoints WHERE workflow_id = ? AND node_id = ?', workflowId, nodeId);
+    const existing = this.db.get<{ id: string; token: string }>(
+      'SELECT id, token FROM webhook_endpoints WHERE workflow_id = ? AND node_id = ?',
+      workflowId,
+      nodeId,
+    );
     if (existing) return existing;
     const id = newId('hook');
     this.db.run('INSERT INTO webhook_endpoints (id, workflow_id, node_id, token, created_at) VALUES (?, ?, ?, ?, ?)', id, workflowId, nodeId, token, nowIso());
@@ -789,8 +807,24 @@ export class NotificationRepo {
   constructor(private readonly db: Database) {}
 
   add(n: { title: string; body: string; workflowId?: string | null; executionId?: string | null }): NotificationRow {
-    const row: NotificationRow = { id: newId('ntf'), ts: nowIso(), title: n.title, body: n.body, workflow_id: n.workflowId ?? null, execution_id: n.executionId ?? null, read: 0 };
-    this.db.run('INSERT INTO notifications (id, ts, title, body, workflow_id, execution_id, read) VALUES (?, ?, ?, ?, ?, ?, 0)', row.id, row.ts, row.title, row.body, row.workflow_id, row.execution_id);
+    const row: NotificationRow = {
+      id: newId('ntf'),
+      ts: nowIso(),
+      title: n.title,
+      body: n.body,
+      workflow_id: n.workflowId ?? null,
+      execution_id: n.executionId ?? null,
+      read: 0,
+    };
+    this.db.run(
+      'INSERT INTO notifications (id, ts, title, body, workflow_id, execution_id, read) VALUES (?, ?, ?, ?, ?, ?, 0)',
+      row.id,
+      row.ts,
+      row.title,
+      row.body,
+      row.workflow_id,
+      row.execution_id,
+    );
     return row;
   }
 
@@ -808,13 +842,24 @@ export class DeadLetterRepo {
 
   add(input: { workflowId: string; executionId?: string | null; reason: string; payload: unknown }): string {
     const id = newId('dlq');
-    this.db.run('INSERT INTO dead_letters (id, workflow_id, execution_id, reason, payload, created_at) VALUES (?, ?, ?, ?, ?, ?)', id, input.workflowId, input.executionId ?? null, input.reason, j(input.payload), nowIso());
+    this.db.run(
+      'INSERT INTO dead_letters (id, workflow_id, execution_id, reason, payload, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+      id,
+      input.workflowId,
+      input.executionId ?? null,
+      input.reason,
+      j(input.payload),
+      nowIso(),
+    );
     return id;
   }
 
   list(limit = 100): { id: string; workflow_id: string; execution_id: string | null; reason: string; payload: unknown; created_at: string }[] {
     return this.db
-      .all<{ id: string; workflow_id: string; execution_id: string | null; reason: string; payload: string; created_at: string }>('SELECT * FROM dead_letters ORDER BY created_at DESC LIMIT ?', limit)
+      .all<{ id: string; workflow_id: string; execution_id: string | null; reason: string; payload: string; created_at: string }>(
+        'SELECT * FROM dead_letters ORDER BY created_at DESC LIMIT ?',
+        limit,
+      )
       .map((r) => ({ ...r, payload: pj(r.payload, null) }));
   }
 
@@ -867,7 +912,15 @@ export class UserRepo {
 
   create(u: { email: string; name: string; passwordHash: string | null; role: UserRow['role']; id?: string }): UserRow {
     const id = u.id ?? newId('usr');
-    this.db.run('INSERT INTO users (id, email, name, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?, ?)', id, u.email, u.name, u.passwordHash, u.role, nowIso());
+    this.db.run(
+      'INSERT INTO users (id, email, name, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+      id,
+      u.email,
+      u.name,
+      u.passwordHash,
+      u.role,
+      nowIso(),
+    );
     return this.get(id)!;
   }
 

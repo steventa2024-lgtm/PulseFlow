@@ -68,7 +68,10 @@ export class WorkflowService {
     return wf;
   }
 
-  create(input: { name: string; description?: string; tags?: string[]; draft?: WorkflowGraph; settings?: Partial<WorkflowSettings>; templateId?: string | null }, actor: string): Workflow {
+  create(
+    input: { name: string; description?: string; tags?: string[]; draft?: WorkflowGraph; settings?: Partial<WorkflowSettings>; templateId?: string | null },
+    actor: string,
+  ): Workflow {
     const settings = WorkflowSettingsSchema.parse({ ...input.settings, permissions: input.settings?.permissions ?? defaultWorkflowSettings().permissions });
     const wf = this.deps.store.workflows.create({
       workspaceId: this.deps.workspaceId,
@@ -86,7 +89,9 @@ export class WorkflowService {
 
   update(id: string, patch: WorkflowPatch, actor: string): Workflow {
     const current = this.get(id);
-    const settings = patch.settings ? WorkflowSettingsSchema.parse({ ...current.settings, ...patch.settings, permissions: current.settings.permissions }) : undefined;
+    const settings = patch.settings
+      ? WorkflowSettingsSchema.parse({ ...current.settings, ...patch.settings, permissions: current.settings.permissions })
+      : undefined;
     try {
       const wf = this.deps.store.workflows.update(
         id,
@@ -120,7 +125,16 @@ export class WorkflowService {
 
   duplicate(id: string, actor: string): Workflow {
     const wf = this.get(id);
-    return this.create({ name: `${wf.name} (copy)`, description: wf.description, tags: wf.tags, draft: wf.draft, settings: { ...wf.settings, permissions: defaultWorkflowSettings().permissions } }, actor);
+    return this.create(
+      {
+        name: `${wf.name} (copy)`,
+        description: wf.description,
+        tags: wf.tags,
+        draft: wf.draft,
+        settings: { ...wf.settings, permissions: defaultWorkflowSettings().permissions },
+      },
+      actor,
+    );
   }
 
   validate(graph: WorkflowGraph): ValidationResult {
@@ -132,7 +146,14 @@ export class WorkflowService {
     const wf = this.get(id);
     const result = this.validate(wf.draft);
     if (!result.ok) throw new HttpError(422, 'WORKFLOW_INVALID', 'Fix validation errors before publishing', result.issues);
-    const version = this.deps.store.versions.create({ workflowId: id, graph: wf.draft, settings: wf.settings, note: note || 'Published', createdBy: actor, published: true });
+    const version = this.deps.store.versions.create({
+      workflowId: id,
+      graph: wf.draft,
+      settings: wf.settings,
+      note: note || 'Published',
+      createdBy: actor,
+      published: true,
+    });
     this.deps.store.workflows.setPublishedVersion(id, version.id);
     this.deps.store.audit.record(actor, 'workflow.publish', id, { version: version.versionNumber, checksum: version.checksum });
     const fresh = this.get(id);
@@ -151,7 +172,12 @@ export class WorkflowService {
     }
     const version = this.deps.store.versions.get(wf.publishedVersionId!)!;
     const hasAutoTrigger = version.graph.nodes.some((n) => !n.disabled && n.type !== MANUAL_TRIGGER && this.deps.registry.get(n.type)?.manifest.trigger);
-    if (!hasAutoTrigger) throw new HttpError(422, 'NO_AUTOMATIC_TRIGGER', 'Add a schedule, webhook, watch or poll trigger to activate this workflow (manual triggers run on demand only)');
+    if (!hasAutoTrigger)
+      throw new HttpError(
+        422,
+        'NO_AUTOMATIC_TRIGGER',
+        'Add a schedule, webhook, watch or poll trigger to activate this workflow (manual triggers run on demand only)',
+      );
     this.deps.store.workflows.setActive(id, true);
     wf = this.get(id);
     try {
@@ -198,9 +224,18 @@ export class WorkflowService {
 
   setPermissions(id: string, grants: PermissionGrants, actor: string): Workflow {
     const wf = this.get(id);
-    const permissions = { ...grants, fs: grants.fs.map((g) => ({ path: path.resolve(g.path), access: g.access })), confirmedAt: this.deps.clock.now().toISOString() };
+    const permissions = {
+      ...grants,
+      fs: grants.fs.map((g) => ({ path: path.resolve(g.path), access: g.access })),
+      confirmedAt: this.deps.clock.now().toISOString(),
+    };
     const updated = this.deps.store.workflows.update(id, { settings: { ...wf.settings, permissions } });
-    this.deps.store.audit.record(actor, 'workflow.permissions', id, { fs: permissions.fs, allowPrivateNetwork: permissions.allowPrivateNetwork, email: permissions.email, advancedNodes: permissions.advancedNodes });
+    this.deps.store.audit.record(actor, 'workflow.permissions', id, {
+      fs: permissions.fs,
+      allowPrivateNetwork: permissions.allowPrivateNetwork,
+      email: permissions.email,
+      advancedNodes: permissions.advancedNodes,
+    });
     this.#emitUpdated(updated);
     return updated;
   }
@@ -257,19 +292,33 @@ export class WorkflowService {
         nodes: wf.draft.nodes.map((n) => {
           const parameters = { ...n.parameters };
           const def = this.deps.registry.get(n.type);
-          for (const p of def?.manifest.parameters ?? []) if (p.type === 'credential' && typeof parameters[p.name] === 'string' && !String(parameters[p.name]).includes('{{')) parameters[p.name] = '';
+          for (const p of def?.manifest.parameters ?? [])
+            if (p.type === 'credential' && typeof parameters[p.name] === 'string' && !String(parameters[p.name]).includes('{{')) parameters[p.name] = '';
           const { credentials: _c, ...rest } = n;
           return { ...rest, parameters };
         }),
       };
       const { permissions: _p, errorWorkflowId: _e, ...settings } = wf.settings;
-      return { id: wf.id, name: wf.name, description: wf.description, tags: wf.tags, graph: redact(graph, { secrets }), settings: redact(settings, { secrets }) };
+      return {
+        id: wf.id,
+        name: wf.name,
+        description: wf.description,
+        tags: wf.tags,
+        graph: redact(graph, { secrets }),
+        settings: redact(settings, { secrets }),
+      };
     });
     const checksum = sha256Hex(JSON.stringify(workflows));
     return {
       format: BUNDLE_FORMAT,
       formatVersion: BUNDLE_FORMAT_VERSION,
-      manifest: { exportedAt: this.deps.clock.now().toISOString(), app: this.deps.app.name, appVersion: this.deps.app.version, workflowCount: workflows.length, checksum },
+      manifest: {
+        exportedAt: this.deps.clock.now().toISOString(),
+        app: this.deps.app.name,
+        appVersion: this.deps.app.version,
+        workflowCount: workflows.length,
+        checksum,
+      },
       workflows,
     };
   }
@@ -279,13 +328,23 @@ export class WorkflowService {
     const parsed = WorkflowBundleSchema.safeParse(raw);
     if (!parsed.success) throw new HttpError(400, 'INVALID_BUNDLE', 'Not a valid PulseFlow bundle', parsed.error.issues.slice(0, 20));
     const bundle = parsed.data;
-    if (sha256Hex(JSON.stringify((raw as { workflows?: unknown }).workflows)) !== bundle.manifest.checksum) throw new HttpError(400, 'CHECKSUM_MISMATCH', 'Bundle checksum does not match its contents (file corrupted or edited)');
+    if (sha256Hex(JSON.stringify((raw as { workflows?: unknown }).workflows)) !== bundle.manifest.checksum)
+      throw new HttpError(400, 'CHECKSUM_MISMATCH', 'Bundle checksum does not match its contents (file corrupted or edited)');
     const created: Workflow[] = [];
     const issues: Record<string, ValidationResult['issues']> = {};
     this.deps.store.db.transaction(() => {
       for (const w of bundle.workflows) {
         const { permissions: _p, ...settings } = w.settings;
-        const wf = this.create({ name: w.name, description: w.description, tags: w.tags, draft: w.graph, settings: { ...settings, permissions: defaultWorkflowSettings().permissions } }, actor);
+        const wf = this.create(
+          {
+            name: w.name,
+            description: w.description,
+            tags: w.tags,
+            draft: w.graph,
+            settings: { ...settings, permissions: defaultWorkflowSettings().permissions },
+          },
+          actor,
+        );
         created.push(wf);
         const v = this.validate(w.graph);
         if (v.issues.length) issues[wf.id] = v.issues;
@@ -317,7 +376,11 @@ export class WorkflowService {
         fs.mkdirSync(path.resolve(templateDir, v.default.slice('${templateDir}'.length).replace(/^[\\/]/, '')), { recursive: true });
       }
     }
-    const variables = resolveTemplateVariables(tpl, { demoDir: this.deps.app.demoDir, templateDir, fixturesUrl: this.deps.app.fixturesUrl() }, { demo: opts.demo === true, overrides: opts.variables ?? {} });
+    const variables = resolveTemplateVariables(
+      tpl,
+      { demoDir: this.deps.app.demoDir, templateDir, fixturesUrl: this.deps.app.fixturesUrl() },
+      { demo: opts.demo === true, overrides: opts.variables ?? {} },
+    );
     const grants: FsGrant[] = [];
     for (const v of tpl.variables) {
       const value = variables[v.name];

@@ -89,7 +89,15 @@ export class AuthService {
 
   #session(userId: string): string {
     const token = newToken(32);
-    this.store.users.addToken({ id: newId('ses'), user_id: userId, name: 'session', token_hash: sha256Hex(token), scopes: '*', kind: 'session', expires_at: new Date(Date.now() + SESSION_TTL_MS).toISOString() });
+    this.store.users.addToken({
+      id: newId('ses'),
+      user_id: userId,
+      name: 'session',
+      token_hash: sha256Hex(token),
+      scopes: '*',
+      kind: 'session',
+      expires_at: new Date(Date.now() + SESSION_TTL_MS).toISOString(),
+    });
     return token;
   }
 }

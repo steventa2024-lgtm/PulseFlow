@@ -42,7 +42,7 @@ export function buildConfig(overrides: Partial<HostConfig> & { dataDir?: string 
     localToken: overrides.localToken ?? process.env.PULSEFLOW_TOKEN ?? crypto.randomBytes(24).toString('base64url'),
     ...(overrides.staticDir ? { staticDir: overrides.staticDir } : {}),
     fixtures: overrides.fixtures ?? (process.env.PULSEFLOW_FIXTURES ? process.env.PULSEFLOW_FIXTURES !== '0' : mode === 'local'),
-    ...(overrides.publicUrl ?? process.env.PULSEFLOW_PUBLIC_URL ? { publicUrl: overrides.publicUrl ?? process.env.PULSEFLOW_PUBLIC_URL } : {}),
+    ...((overrides.publicUrl ?? process.env.PULSEFLOW_PUBLIC_URL) ? { publicUrl: overrides.publicUrl ?? process.env.PULSEFLOW_PUBLIC_URL } : {}),
     appVersion: overrides.appVersion ?? APP_VERSION,
     logLevel: overrides.logLevel ?? 'info',
     maxConcurrentExecutions: overrides.maxConcurrentExecutions ?? 4,

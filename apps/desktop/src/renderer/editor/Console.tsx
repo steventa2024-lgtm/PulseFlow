@@ -40,12 +40,21 @@ export function ExecutionConsole({ workflowId, onRetried }: { workflowId: string
     { id: 'timeline', label: <TabLabel icon={<ListTree size={13} />}>Timeline</TabLabel> },
     { id: 'io', label: <TabLabel icon={<ChevronDown size={13} className="-rotate-90" />}>Node IO</TabLabel> },
     { id: 'logs', label: <TabLabel icon={<ScrollText size={13} />}>Logs</TabLabel>, count: logCount },
-    { id: 'errors', label: <TabLabel icon={<TriangleAlert size={13} />}>Errors</TabLabel>, count: failed.length + (exec.data?.error && !failed.length ? 1 : 0) },
+    {
+      id: 'errors',
+      label: <TabLabel icon={<TriangleAlert size={13} />}>Errors</TabLabel>,
+      count: failed.length + (exec.data?.error && !failed.length ? 1 : 0),
+    },
     { id: 'history', label: <TabLabel icon={<History size={13} />}>History</TabLabel> },
   ];
 
   return (
-    <section className="flex shrink-0 flex-col border-t border-line bg-panel" style={{ height: consoleOpen ? height : 40 }} aria-label="Execution console" data-testid="console">
+    <section
+      className="flex shrink-0 flex-col border-t border-line bg-panel"
+      style={{ height: consoleOpen ? height : 40 }}
+      aria-label="Execution console"
+      data-testid="console"
+    >
       {consoleOpen ? (
         <div
           className="h-1 cursor-row-resize hover:bg-accent/40"
@@ -70,7 +79,9 @@ export function ExecutionConsole({ workflowId, onRetried }: { workflowId: string
           {consoleTab === 'history' ? (
             <HistoryTab workflowId={workflowId} selected={executionId} onSelect={(id) => (setExecution(id), setConsole({ tab: 'timeline' }))} />
           ) : !exec.data ? (
-            <Empty title="Run the workflow to see results here">Press Ctrl+Enter or the Run button. Each node’s inputs, outputs, logs and errors are recorded for every run.</Empty>
+            <Empty title="Run the workflow to see results here">
+              Press Ctrl+Enter or the Run button. Each node’s inputs, outputs, logs and errors are recorded for every run.
+            </Empty>
           ) : consoleTab === 'timeline' ? (
             <TimelineTab exec={exec.data} onPick={(nodeId) => setConsole({ tab: 'io', ioNodeId: nodeId })} />
           ) : consoleTab === 'io' ? (
@@ -105,7 +116,12 @@ function ExecutionHeader({ exec, onRetried }: { exec: ExecutionDetail; onRetried
         {exec.mode} · {duration(executionDuration(exec))} · <span className="font-mono">{exec.id}</span>
       </span>
       {!terminal ? (
-        <Button size="sm" variant="danger" icon={<Square size={11} />} onClick={() => void api.cancel(exec.id).then(() => qc.invalidateQueries({ queryKey: ['execution', exec.id] }))}>
+        <Button
+          size="sm"
+          variant="danger"
+          icon={<Square size={11} />}
+          onClick={() => void api.cancel(exec.id).then(() => qc.invalidateQueries({ queryKey: ['execution', exec.id] }))}
+        >
           Stop
         </Button>
       ) : exec.state !== 'succeeded' ? (
@@ -159,7 +175,13 @@ function TimelineTab({ exec, onPick }: { exec: ExecutionDetail; onPick: (nodeId:
             const w = s.durationMs ?? (s.state === 'running' && s.startedAt ? Date.now() - Date.parse(s.startedAt) : 0);
             const items = s.output ? Object.values(s.output).reduce((a, l) => a + l.length, 0) : null;
             return (
-              <tr key={s.id} className="cursor-pointer hover:bg-hover/60" onClick={() => onPick(s.nodeId)} data-testid={`timeline-row-${s.nodeName}`} data-state={s.state}>
+              <tr
+                key={s.id}
+                className="cursor-pointer hover:bg-hover/60"
+                onClick={() => onPick(s.nodeId)}
+                data-testid={`timeline-row-${s.nodeName}`}
+                data-state={s.state}
+              >
                 <td className="w-52 py-1 pr-2">
                   <div className="flex items-center gap-2">
                     <span className={cx('h-2 w-2 shrink-0 rounded-full', st.dot)} />
@@ -171,12 +193,17 @@ function TimelineTab({ exec, onPick }: { exec: ExecutionDetail; onPick: (nodeId:
                 <td className="py-1 pr-3">
                   <div className="relative h-4 rounded bg-bg">
                     {s.state !== 'skipped' ? (
-                      <div className={cx('absolute top-0.5 bottom-0.5 rounded-sm', st.dot)} style={{ left: `${(s0 / total) * 100}%`, width: `max(3px, ${(w / total) * 100}%)`, opacity: 0.85 }} />
+                      <div
+                        className={cx('absolute top-0.5 bottom-0.5 rounded-sm', st.dot)}
+                        style={{ left: `${(s0 / total) * 100}%`, width: `max(3px, ${(w / total) * 100}%)`, opacity: 0.85 }}
+                      />
                     ) : null}
                   </div>
                 </td>
                 <td className="w-20 py-1 text-right text-faint">{items !== null ? `${items} item${items === 1 ? '' : 's'}` : ''}</td>
-                <td className="w-20 py-1 text-right font-mono text-faint">{s.state === 'retrying' && s.retryInMs ? `retry ${duration(s.retryInMs)}` : duration(s.durationMs)}</td>
+                <td className="w-20 py-1 text-right font-mono text-faint">
+                  {s.state === 'retrying' && s.retryInMs ? `retry ${duration(s.retryInMs)}` : duration(s.durationMs)}
+                </td>
               </tr>
             );
           })}
@@ -194,7 +221,14 @@ function ItemsView({ items }: { items: Item[] }) {
     return [...cols].slice(0, 30);
   }, [items]);
   if (!items.length) return <div className="p-3 text-xs text-faint">No items.</div>;
-  const cell = (v: unknown) => (v === null || v === undefined ? <span className="text-faint">∅</span> : typeof v === 'object' ? <span className="text-violet">{JSON.stringify(v).slice(0, 120)}</span> : String(v).slice(0, 200));
+  const cell = (v: unknown) =>
+    v === null || v === undefined ? (
+      <span className="text-faint">∅</span>
+    ) : typeof v === 'object' ? (
+      <span className="text-violet">{JSON.stringify(v).slice(0, 120)}</span>
+    ) : (
+      String(v).slice(0, 200)
+    );
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex items-center gap-2 px-3 py-1.5 text-[11px] text-faint">
@@ -260,7 +294,12 @@ function IoTab({ exec, nodeId, onPick }: { exec: ExecutionDetail; nodeId: string
     <div className="flex h-full" data-testid="node-io">
       <div className="w-52 shrink-0 overflow-y-auto border-r border-line py-1">
         {latest.map((s) => (
-          <button key={s.nodeId} type="button" onClick={() => onPick(s.nodeId)} className={cx('flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs hover:bg-hover', step?.nodeId === s.nodeId && 'bg-raised text-ink')}>
+          <button
+            key={s.nodeId}
+            type="button"
+            onClick={() => onPick(s.nodeId)}
+            className={cx('flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs hover:bg-hover', step?.nodeId === s.nodeId && 'bg-raised text-ink')}
+          >
             <span className={cx('h-1.5 w-1.5 shrink-0 rounded-full', stateStyle(s.state).dot)} />
             <span className="truncate">{s.nodeName}</span>
           </button>
@@ -281,7 +320,12 @@ function IoTab({ exec, nodeId, onPick }: { exec: ExecutionDetail; nodeId: string
               {ports.length > 1 ? (
                 <div className="flex items-center gap-1">
                   {ports.map((p) => (
-                    <button key={p} type="button" onClick={() => setPort(p)} className={cx('rounded px-1.5 py-0.5 text-[11px]', activePort === p ? 'bg-accent/15 text-accent' : 'text-faint hover:text-ink')}>
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setPort(p)}
+                      className={cx('rounded px-1.5 py-0.5 text-[11px]', activePort === p ? 'bg-accent/15 text-accent' : 'text-faint hover:text-ink')}
+                    >
                       {p}
                     </button>
                   ))}
@@ -293,7 +337,15 @@ function IoTab({ exec, nodeId, onPick }: { exec: ExecutionDetail; nodeId: string
                 {stateStyle(step.state).label} · {duration(step.durationMs)}
               </span>
             </div>
-            <div className="min-h-0 flex-1">{step.error ? <div className="m-3 rounded-lg border border-bad/30 bg-bad/10 p-2 text-xs text-bad">{step.error.code}: {step.error.message}</div> : <ItemsView items={items} />}</div>
+            <div className="min-h-0 flex-1">
+              {step.error ? (
+                <div className="m-3 rounded-lg border border-bad/30 bg-bad/10 p-2 text-xs text-bad">
+                  {step.error.code}: {step.error.message}
+                </div>
+              ) : (
+                <ItemsView items={items} />
+              )}
+            </div>
           </>
         ) : (
           <Empty title="No node data" />
@@ -356,7 +408,12 @@ function ErrorsTab({ exec, onRetried, onPick }: { exec: ExecutionDetail; onRetri
         </div>
       ) : null}
       {failed.map((s) => (
-        <button key={s.id} type="button" onClick={() => onPick(s.nodeId)} className="block w-full rounded-lg border border-line bg-bg/60 p-3 text-left text-xs hover:border-line-strong">
+        <button
+          key={s.id}
+          type="button"
+          onClick={() => onPick(s.nodeId)}
+          className="block w-full rounded-lg border border-line bg-bg/60 p-3 text-left text-xs hover:border-line-strong"
+        >
           <div className="flex items-center gap-2">
             <span className="font-medium">{s.nodeName}</span>
             <Badge tone={s.state === 'retrying' ? 'warn' : 'bad'}>
@@ -380,7 +437,11 @@ function HistoryTab({ workflowId, selected, onSelect }: { workflowId: string; se
       <table className="w-full text-xs">
         <tbody>
           {list.data.map((e) => (
-            <tr key={e.id} onClick={() => onSelect(e.id)} className={cx('cursor-pointer border-b border-line/50 hover:bg-hover/60', selected === e.id && 'bg-raised')}>
+            <tr
+              key={e.id}
+              onClick={() => onSelect(e.id)}
+              className={cx('cursor-pointer border-b border-line/50 hover:bg-hover/60', selected === e.id && 'bg-raised')}
+            >
               <td className="px-3 py-1.5">
                 <StateBadge state={e.state} />
               </td>

@@ -39,7 +39,11 @@ export function resolvePlaceholders(value: VariableValue, ctx: PlaceholderContex
 }
 
 /** Resolves the variable values a template will be instantiated with, optionally in demo mode. */
-export function resolveTemplateVariables(tpl: TemplateManifest, ctx: PlaceholderContext, opts: { demo?: boolean; overrides?: Record<string, VariableValue> } = {}): Record<string, VariableValue> {
+export function resolveTemplateVariables(
+  tpl: TemplateManifest,
+  ctx: PlaceholderContext,
+  opts: { demo?: boolean; overrides?: Record<string, VariableValue> } = {},
+): Record<string, VariableValue> {
   const vars: Record<string, VariableValue> = {};
   for (const v of tpl.variables) vars[v.name] = resolvePlaceholders(v.default, ctx);
   if (opts.demo && tpl.demoOverrides) for (const [k, v] of Object.entries(tpl.demoOverrides)) vars[k] = resolvePlaceholders(v, ctx);

@@ -13,6 +13,8 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@pulseflow/contracts": "workspace:*", "@pulseflow/security": "workspace:*", "croner": "^10.0.1"
+    "@pulseflow/contracts": "workspace:*",
+    "@pulseflow/security": "workspace:*",
+    "croner": "^10.0.1"
   }
 }

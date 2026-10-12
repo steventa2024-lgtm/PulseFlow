@@ -55,19 +55,30 @@ export interface TemplateRun {
 }
 
 export async function instantiate(host: TestHost, templateId: string, opts: { demo?: boolean; variables?: Record<string, VariableValue> } = {}) {
-  const res = await host.api<{ workflow: { id: string }; templateDir: string }>('POST', `/api/templates/${templateId}/instantiate`, { demo: opts.demo ?? false, ...(opts.variables ? { variables: opts.variables } : {}) });
+  const res = await host.api<{ workflow: { id: string }; templateDir: string }>('POST', `/api/templates/${templateId}/instantiate`, {
+    demo: opts.demo ?? false,
+    ...(opts.variables ? { variables: opts.variables } : {}),
+  });
   if (res.status !== 200) throw new Error(`instantiate ${templateId} failed: ${res.status} ${JSON.stringify(res.body)}`);
   return { workflowId: res.body.workflow.id, templateDir: res.body.templateDir };
 }
 
-export async function runWorkflow(host: TestHost, workflowId: string, body: Record<string, unknown> = {}): Promise<{ execution: ExecutionRecord; steps: ExecutionStep[] }> {
+export async function runWorkflow(
+  host: TestHost,
+  workflowId: string,
+  body: Record<string, unknown> = {},
+): Promise<{ execution: ExecutionRecord; steps: ExecutionStep[] }> {
   const res = await host.api<{ executionId: string }>('POST', `/api/workflows/${workflowId}/run`, { ...body, wait: false });
   if (res.status !== 200) throw new Error(`run failed: ${res.status} ${JSON.stringify(res.body)}`);
   const execution = await host.ctx.executions.waitFor(res.body.executionId, 60_000);
   return { execution, steps: host.ctx.store.steps.list(execution.id) };
 }
 
-export async function runTemplate(host: TestHost, templateId: string, opts: { demo?: boolean; variables?: Record<string, VariableValue>; run?: Record<string, unknown> } = {}): Promise<TemplateRun> {
+export async function runTemplate(
+  host: TestHost,
+  templateId: string,
+  opts: { demo?: boolean; variables?: Record<string, VariableValue>; run?: Record<string, unknown> } = {},
+): Promise<TemplateRun> {
   const { workflowId, templateDir } = await instantiate(host, templateId, opts);
   const { execution, steps } = await runWorkflow(host, workflowId, opts.run ?? {});
   return withFiles({ workflowId, templateDir, execution, steps });

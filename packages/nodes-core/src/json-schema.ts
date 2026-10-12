@@ -48,7 +48,8 @@ export function validateJsonSchema(value: unknown, schema: Schema, path = '$', e
   if (typeof value === 'string') {
     if (typeof schema.minLength === 'number' && value.length < schema.minLength) push(`must be at least ${schema.minLength} characters`);
     if (typeof schema.maxLength === 'number' && value.length > schema.maxLength) push(`must be at most ${schema.maxLength} characters`);
-    if (typeof schema.pattern === 'string' && schema.pattern.length <= 500 && !new RegExp(schema.pattern, 'u').test(value)) push(`must match ${schema.pattern}`);
+    if (typeof schema.pattern === 'string' && schema.pattern.length <= 500 && !new RegExp(schema.pattern, 'u').test(value))
+      push(`must match ${schema.pattern}`);
     if (typeof schema.format === 'string' && FORMATS[schema.format] && !FORMATS[schema.format]!(value)) push(`must be a valid ${schema.format}`);
   }
   if (typeof value === 'number') {

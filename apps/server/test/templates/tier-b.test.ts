@@ -29,7 +29,10 @@ describe('Tier B templates — demo mode (bundled fixtures, clearly labelled)', 
   it('B01 GitHub Release Digest paginates the fixture and writes the 10 newest releases', async () => {
     const r = await runTemplate(host, 'B01', { demo: true });
     expect(r.execution.state, stepSummary(r.steps)).toBe('succeeded');
-    const lines = r.file('release-digest.md').split('\n').filter((l) => l.startsWith('- '));
+    const lines = r
+      .file('release-digest.md')
+      .split('\n')
+      .filter((l) => l.startsWith('- '));
     expect(lines).toHaveLength(10);
     expect(lines[0]).toContain('**v1.12.0**');
     expect(lines[9]).toContain('**v1.3.0**');
@@ -70,7 +73,14 @@ describe('Tier B templates — demo mode (bundled fixtures, clearly labelled)', 
     expect(mail).toHaveLength(1);
     expect(mail[0]!.to).toEqual(['me@example.com']);
     const subject = /^Subject: (.+(?:\n[ \t].+)*)/m.exec(mail[0]!.data)![1]!.replace(/\n[ \t]/g, '');
-    const decoded = subject.replace(/=\?UTF-8\?Q\?(.*?)\?=/gi, (_, q: string) => Buffer.from(q.replace(/_/g, ' ').replace(/=([0-9A-F]{2})/gi, (_m, h: string) => String.fromCharCode(parseInt(h, 16))), 'latin1').toString('utf8')).replace(/\?=\s*=\?UTF-8\?Q\?/gi, '');
+    const decoded = subject
+      .replace(/=\?UTF-8\?Q\?(.*?)\?=/gi, (_, q: string) =>
+        Buffer.from(
+          q.replace(/_/g, ' ').replace(/=([0-9A-F]{2})/gi, (_m, h: string) => String.fromCharCode(parseInt(h, 16))),
+          'latin1',
+        ).toString('utf8'),
+      )
+      .replace(/\?=\s*=\?UTF-8\?Q\?/gi, '');
     expect(decoded).toMatch(/Task digest — \d{4}-\d{2}-\d{2} \(2 open\)/);
     expect(mail[0]!.data).toContain('Water the plants');
     expect(mail[0]!.data).not.toContain('File taxes');

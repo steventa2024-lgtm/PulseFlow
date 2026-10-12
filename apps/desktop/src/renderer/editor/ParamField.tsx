@@ -116,7 +116,13 @@ function FieldControl({ id, def, value, onChange, credentials }: Props & { id: s
     case 'path':
       return (
         <div className="flex gap-1.5">
-          <Input id={id} value={String(value ?? '')} placeholder={def.placeholder ?? 'C:\\Users\\you\\Documents\\folder'} onChange={(e) => onChange(e.target.value)} className="font-mono text-xs" />
+          <Input
+            id={id}
+            value={String(value ?? '')}
+            placeholder={def.placeholder ?? 'C:\\Users\\you\\Documents\\folder'}
+            onChange={(e) => onChange(e.target.value)}
+            className="font-mono text-xs"
+          />
           {bridge ? (
             <IconButton
               label="Browse"
@@ -148,7 +154,11 @@ function FieldControl({ id, def, value, onChange, credentials }: Props & { id: s
           {isExpr(v) ? <Input value={v} onChange={(e) => onChange(e.target.value)} className="font-mono text-xs" /> : null}
           {options.length === 0 ? (
             <div className="text-[11px] text-faint">
-              No {def.credentialType ?? ''} credentials yet. Add one under <a href="#/credentials" className="text-accent hover:underline">Credentials</a>.
+              No {def.credentialType ?? ''} credentials yet. Add one under{' '}
+              <a href="#/credentials" className="text-accent hover:underline">
+                Credentials
+              </a>
+              .
             </div>
           ) : null}
         </div>
@@ -244,7 +254,11 @@ function ConditionsField({ value, onChange, withLabel }: { value: unknown; onCha
       {rows.map((r, i) => (
         <div key={i} className="space-y-1.5 rounded-lg border border-line bg-bg/60 p-2">
           <div className="flex items-center gap-1.5">
-            {withLabel ? <Input value={r.label ?? ''} placeholder={`Case ${i + 1}`} onChange={(e) => update(i, { label: e.target.value })} className="h-7 text-xs" /> : <span className="text-[11px] text-faint">#{i + 1}</span>}
+            {withLabel ? (
+              <Input value={r.label ?? ''} placeholder={`Case ${i + 1}`} onChange={(e) => update(i, { label: e.target.value })} className="h-7 text-xs" />
+            ) : (
+              <span className="text-[11px] text-faint">#{i + 1}</span>
+            )}
             <div className="flex-1" />
             <IconButton label="Remove condition" className="h-6 w-6" onClick={() => onChange(rows.filter((_, j) => j !== i))}>
               <Trash2 size={12} />
@@ -258,10 +272,17 @@ function ConditionsField({ value, onChange, withLabel }: { value: unknown; onCha
               </option>
             ))}
           </Select>
-          {UNARY.has(r.operator) ? null : <Input value={str(r.right)} placeholder="Value" onChange={(e) => update(i, { right: e.target.value })} className="h-7 font-mono text-xs" />}
+          {UNARY.has(r.operator) ? null : (
+            <Input value={str(r.right)} placeholder="Value" onChange={(e) => update(i, { right: e.target.value })} className="h-7 font-mono text-xs" />
+          )}
         </div>
       ))}
-      <Button size="sm" variant="ghost" icon={<Plus size={13} />} onClick={() => onChange([...rows, { ...(withLabel ? { label: `Case ${rows.length + 1}` } : {}), left: '', operator: 'equals', right: '' }])}>
+      <Button
+        size="sm"
+        variant="ghost"
+        icon={<Plus size={13} />}
+        onClick={() => onChange([...rows, { ...(withLabel ? { label: `Case ${rows.length + 1}` } : {}), left: '', operator: 'equals', right: '' }])}
+      >
         {withLabel ? 'Add rule' : 'Add condition'}
       </Button>
     </div>

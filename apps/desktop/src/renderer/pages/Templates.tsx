@@ -25,7 +25,9 @@ export function TemplatesPage() {
   const [open, setOpen] = useState<TemplateSummary | null>(null);
   const items = useMemo(() => {
     const term = q.toLowerCase();
-    return (list.data?.templates ?? []).filter((t) => (tier === 'all' || t.tier === tier) && (!term || `${t.name} ${t.description} ${t.category} ${t.tags.join(' ')}`.toLowerCase().includes(term)));
+    return (list.data?.templates ?? []).filter(
+      (t) => (tier === 'all' || t.tier === tier) && (!term || `${t.name} ${t.description} ${t.category} ${t.tags.join(' ')}`.toLowerCase().includes(term)),
+    );
   }, [list.data, tier, q]);
 
   return (
@@ -33,8 +35,9 @@ export function TemplatesPage() {
       <div className="mx-auto max-w-6xl px-8 py-7">
         <h1 className="text-xl font-semibold">Templates</h1>
         <p className="mt-1 mb-5 max-w-3xl text-[13px] text-muted">
-          <b className="text-ink">Offline</b> templates run immediately with bundled sample files and need no accounts. <b className="text-ink">Connected</b> templates need your own account or local service to run live; each also has a clearly
-          labelled demo mode that talks to PulseFlow’s built-in local fixture server instead of the real service.
+          <b className="text-ink">Offline</b> templates run immediately with bundled sample files and need no accounts. <b className="text-ink">Connected</b>{' '}
+          templates need your own account or local service to run live; each also has a clearly labelled demo mode that talks to PulseFlow’s built-in local
+          fixture server instead of the real service.
         </p>
         <div className="mb-4 flex items-center gap-3">
           <Tabs
@@ -53,7 +56,12 @@ export function TemplatesPage() {
         </div>
         <div className="grid grid-cols-3 gap-3">
           {items.map((t) => (
-            <Card key={t.id} className="flex cursor-pointer flex-col p-4 transition-colors hover:border-line-strong" onClick={() => setOpen(t)} data-testid={`template-card-${t.id}`}>
+            <Card
+              key={t.id}
+              className="flex cursor-pointer flex-col p-4 transition-colors hover:border-line-strong"
+              onClick={() => setOpen(t)}
+              data-testid={`template-card-${t.id}`}
+            >
               <div className="mb-2 flex items-center gap-1.5">
                 <Badge tone={t.tier === 'A' ? 'ok' : 'accent'}>
                   {t.tier === 'A' ? <WifiOff size={10} /> : <Plug size={10} />}
@@ -103,7 +111,12 @@ function TemplateDialog({ summary, onClose }: { summary: TemplateSummary; onClos
   const t = detail.data;
   const isB = summary.tier === 'B';
   const resolveDefault = (v: string | number | boolean) =>
-    typeof v === 'string' && info.data ? v.replaceAll('${demoDir}', info.data.demoDir).replaceAll('${fixturesUrl}', info.data.fixturesUrl).replaceAll('${templateDir}', `${info.data.demoDir}/templates/${summary.id}-…`) : v;
+    typeof v === 'string' && info.data
+      ? v
+          .replaceAll('${demoDir}', info.data.demoDir)
+          .replaceAll('${fixturesUrl}', info.data.fixturesUrl)
+          .replaceAll('${templateDir}', `${info.data.demoDir}/templates/${summary.id}-…`)
+      : v;
   const shownVars = summary.variables.filter((v) => !(demo && isB && summary.demoOverrides && v.name in summary.demoOverrides));
 
   const use = async () => {
@@ -182,7 +195,9 @@ function TemplateDialog({ summary, onClose }: { summary: TemplateSummary; onClos
             </div>
           ) : null}
           <div className="mt-4 mb-1.5 text-xs font-semibold tracking-wide text-muted uppercase">Sample output</div>
-          <pre className="max-h-40 overflow-auto rounded-lg border border-line bg-bg p-2.5 font-mono text-[11px] whitespace-pre-wrap text-muted">{summary.sample.output}</pre>
+          <pre className="max-h-40 overflow-auto rounded-lg border border-line bg-bg p-2.5 font-mono text-[11px] whitespace-pre-wrap text-muted">
+            {summary.sample.output}
+          </pre>
         </div>
         <div>
           <div className="mb-2 text-xs font-semibold tracking-wide text-muted uppercase">Settings</div>
@@ -201,7 +216,11 @@ function TemplateDialog({ summary, onClose }: { summary: TemplateSummary; onClos
                     <>
                       <Label hint={v.access ? (v.access === 'readwrite' ? 'read & write' : 'read only') : undefined}>{v.label}</Label>
                       <div className="flex gap-1.5">
-                        <Input value={String(value)} onChange={(e) => setValues((s) => ({ ...s, [v.name]: v.kind === 'number' ? Number(e.target.value) : e.target.value }))} className={cx((v.kind === 'folder' || v.kind === 'file') && 'font-mono text-xs')} />
+                        <Input
+                          value={String(value)}
+                          onChange={(e) => setValues((s) => ({ ...s, [v.name]: v.kind === 'number' ? Number(e.target.value) : e.target.value }))}
+                          className={cx((v.kind === 'folder' || v.kind === 'file') && 'font-mono text-xs')}
+                        />
                         {bridge && (v.kind === 'folder' || v.kind === 'file') ? (
                           <Button
                             size="md"
@@ -233,14 +252,31 @@ function TemplateDialog({ summary, onClose }: { summary: TemplateSummary; onClos
   );
 }
 
-function ModeCard({ active, onClick, icon, title, children, disabled }: { active: boolean; onClick: () => void; icon: React.ReactNode; title: string; children: React.ReactNode; disabled?: boolean }) {
+function ModeCard({
+  active,
+  onClick,
+  icon,
+  title,
+  children,
+  disabled,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  title: string;
+  children: React.ReactNode;
+  disabled?: boolean;
+}) {
   return (
     <button
       type="button"
       disabled={disabled}
       onClick={onClick}
       data-testid={`mode-${title.toLowerCase().replace(/\s+/g, '-')}`}
-      className={cx('rounded-xl border p-3 text-left transition-colors disabled:opacity-40', active ? 'border-accent bg-accent/10' : 'border-line bg-bg/40 hover:border-line-strong')}
+      className={cx(
+        'rounded-xl border p-3 text-left transition-colors disabled:opacity-40',
+        active ? 'border-accent bg-accent/10' : 'border-line bg-bg/40 hover:border-line-strong',
+      )}
     >
       <div className="flex items-center gap-2 text-[13px] font-medium">
         {icon} {title}

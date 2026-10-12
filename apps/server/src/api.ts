@@ -37,7 +37,10 @@ const ExecutionQuerySchema = z.object({
 });
 const SettingsPatchSchema = z.object({
   advancedNodes: z.boolean().optional(),
-  envAllowList: z.array(z.string().regex(/^[A-Za-z_][A-Za-z0-9_]{0,127}$/)).max(100).optional(),
+  envAllowList: z
+    .array(z.string().regex(/^[A-Za-z_][A-Za-z0-9_]{0,127}$/))
+    .max(100)
+    .optional(),
   retentionDays: z.number().int().min(1).max(3650).optional(),
   keepRunningInTray: z.boolean().optional(),
 });
@@ -114,7 +117,11 @@ export function registerApi(app: FastifyInstance, ctx: HostContext): void {
     const settings = readAppSettings(ctx);
     return ctx.registry.manifests().map((m) => {
       const advancedOff = m.risk === 'advanced' && !settings.advancedNodes;
-      return { ...m, enabled: !advancedOff, ...(advancedOff ? { disabledReason: 'Advanced nodes are disabled. Enable them in Settings → Advanced and grant the workflow permission.' } : {}) };
+      return {
+        ...m,
+        enabled: !advancedOff,
+        ...(advancedOff ? { disabledReason: 'Advanced nodes are disabled. Enable them in Settings → Advanced and grant the workflow permission.' } : {}),
+      };
     });
   });
   app.get('/api/credential-types', async () => CREDENTIAL_TYPES);
@@ -168,7 +175,9 @@ export function registerApi(app: FastifyInstance, ctx: HostContext): void {
     return ctx.workflows.validate(b.graph ?? ctx.workflows.get(params(req).id).draft);
   });
   app.post('/api/validate', async (req) => ctx.workflows.validate(body(z.object({ graph: WorkflowGraphSchema }), req).graph));
-  app.post('/api/workflows/:id/publish', async (req) => ctx.workflows.publish(params(req).id, body(z.object({ note: z.string().max(500).default('') }), req).note, actor(req)));
+  app.post('/api/workflows/:id/publish', async (req) =>
+    ctx.workflows.publish(params(req).id, body(z.object({ note: z.string().max(500).default('') }), req).note, actor(req)),
+  );
   app.post('/api/workflows/:id/activate', async (req) => ctx.workflows.activate(params(req).id, actor(req)));
   app.post('/api/workflows/:id/deactivate', async (req) => ctx.workflows.deactivate(params(req).id, actor(req)));
   app.get('/api/workflows/:id/versions', async (req) => ctx.workflows.versions(params(req).id));
@@ -247,8 +256,19 @@ export function registerApi(app: FastifyInstance, ctx: HostContext): void {
     return { ...t, fixtures: Object.keys(t.fixtures) };
   });
   app.post('/api/templates/:id/instantiate', async (req) => {
-    const b = body(z.object({ demo: z.boolean().default(false), name: z.string().min(1).max(200).optional(), variables: z.record(z.string(), z.union([z.string().max(10_000), z.number(), z.boolean()])).optional() }), req);
-    const { workflow, templateDir } = ctx.workflows.instantiateTemplate(params(req).id, { demo: b.demo, ...(b.name ? { name: b.name } : {}), ...(b.variables ? { variables: b.variables } : {}) }, actor(req));
+    const b = body(
+      z.object({
+        demo: z.boolean().default(false),
+        name: z.string().min(1).max(200).optional(),
+        variables: z.record(z.string(), z.union([z.string().max(10_000), z.number(), z.boolean()])).optional(),
+      }),
+      req,
+    );
+    const { workflow, templateDir } = ctx.workflows.instantiateTemplate(
+      params(req).id,
+      { demo: b.demo, ...(b.name ? { name: b.name } : {}), ...(b.variables ? { variables: b.variables } : {}) },
+      actor(req),
+    );
     return { workflow, templateDir };
   });
 
@@ -271,7 +291,11 @@ export function registerApi(app: FastifyInstance, ctx: HostContext): void {
     const entry = ctx.store.deadLetters.list(10_000).find((d) => d.id === params(req).id);
     if (!entry) throw new HttpError(404, 'NOT_FOUND', 'Dead letter not found');
     const payload = entry.payload as { triggerNodeId?: string; items?: { json: Record<string, unknown> }[] };
-    const rec = ctx.workflows.run(entry.workflow_id, { useDraft: false, wait: false, ...(payload.triggerNodeId ? { triggerNodeId: payload.triggerNodeId } : {}), items: payload.items ?? [] }, actor(req));
+    const rec = ctx.workflows.run(
+      entry.workflow_id,
+      { useDraft: false, wait: false, ...(payload.triggerNodeId ? { triggerNodeId: payload.triggerNodeId } : {}), items: payload.items ?? [] },
+      actor(req),
+    );
     ctx.store.deadLetters.delete(entry.id);
     return { executionId: rec.id };
   });
@@ -299,7 +323,12 @@ export function registerApi(app: FastifyInstance, ctx: HostContext): void {
     const q = z.object({ workflowId: z.string().optional(), executionId: z.string().optional() }).parse(req.query);
     reply.hijack();
     const res = reply.raw;
-    res.writeHead(200, { 'content-type': 'text/event-stream; charset=utf-8', 'cache-control': 'no-cache, no-transform', connection: 'keep-alive', 'x-accel-buffering': 'no' });
+    res.writeHead(200, {
+      'content-type': 'text/event-stream; charset=utf-8',
+      'cache-control': 'no-cache, no-transform',
+      connection: 'keep-alive',
+      'x-accel-buffering': 'no',
+    });
     res.write(': connected\n\n');
     const send = (e: EngineEvent) => {
       if (q.workflowId && 'workflowId' in e && e.workflowId !== q.workflowId) return;
@@ -324,7 +353,15 @@ function openApiDocument(version: string): unknown {
     const p = url.replace(/:(\w+)/g, '{$1}');
     paths[p] = { ...(paths[p] ?? {}), [method.toLowerCase()]: { summary: `${method} ${url}` } };
   }
-  return { openapi: '3.1.0', info: { title: 'PulseFlow local API', version, description: 'Loopback API used by the PulseFlow desktop app, CLI and automation. All /api routes except /api/health require a bearer token.' }, paths };
+  return {
+    openapi: '3.1.0',
+    info: {
+      title: 'PulseFlow local API',
+      version,
+      description: 'Loopback API used by the PulseFlow desktop app, CLI and automation. All /api routes except /api/health require a bearer token.',
+    },
+    paths,
+  };
 }
 
 const ROUTE_LIST = [

@@ -233,11 +233,20 @@ function createTray(): void {
 function registerIpc(): void {
   ipcMain.handle('pf:connection', (e) => {
     assertTrustedSender(e);
-    return { token: host?.token ?? null, shell: 'desktop', keyProtection, platform: process.platform, versions: { electron: process.versions.electron, chrome: process.versions.chrome, node: process.versions.node } };
+    return {
+      token: host?.token ?? null,
+      shell: 'desktop',
+      keyProtection,
+      platform: process.platform,
+      versions: { electron: process.versions.electron, chrome: process.versions.chrome, node: process.versions.node },
+    };
   });
   ipcMain.handle('pf:selectFolder', async (e, title: unknown) => {
     assertTrustedSender(e);
-    const r = await dialog.showOpenDialog(mainWindow!, { title: typeof title === 'string' ? title.slice(0, 200) : 'Select folder', properties: ['openDirectory', 'createDirectory'] });
+    const r = await dialog.showOpenDialog(mainWindow!, {
+      title: typeof title === 'string' ? title.slice(0, 200) : 'Select folder',
+      properties: ['openDirectory', 'createDirectory'],
+    });
     return r.canceled ? null : (r.filePaths[0] ?? null);
   });
   ipcMain.handle('pf:selectFile', async (e, title: unknown) => {

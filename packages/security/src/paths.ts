@@ -82,6 +82,7 @@ export function assertPathAllowed(target: string, access: 'read' | 'write', poli
 
 /** Rejects file names that would escape their directory or be invalid on Windows. */
 export function sanitizeFileName(name: string, replacement = '_'): string {
+  // eslint-disable-next-line no-control-regex -- control characters are invalid in Windows file names
   let out = name.replace(/[<>:"/\\|?*\u0000-\u001f]/g, replacement).replace(/[. ]+$/g, '');
   if (/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i.test(out)) out = `${replacement}${out}`;
   if (out === '' || out === '.' || out === '..') out = replacement;

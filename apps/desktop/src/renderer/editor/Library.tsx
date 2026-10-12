@@ -39,7 +39,11 @@ export function Library({ catalog, onAdd }: { catalog: NodeCatalogEntry[]; onAdd
       <div className="min-h-0 flex-1 overflow-y-auto p-2">
         {groups.map(([cat, entries]) => (
           <div key={cat} className="mb-1">
-            <button type="button" className="flex w-full items-center gap-1.5 rounded-md px-1.5 py-1.5 text-[11px] font-semibold tracking-wide text-faint uppercase hover:text-muted" onClick={() => setCollapsed((c) => ({ ...c, [cat]: !c[cat] }))}>
+            <button
+              type="button"
+              className="flex w-full items-center gap-1.5 rounded-md px-1.5 py-1.5 text-[11px] font-semibold tracking-wide text-faint uppercase hover:text-muted"
+              onClick={() => setCollapsed((c) => ({ ...c, [cat]: !c[cat] }))}
+            >
               <ChevronDown size={12} className={cx('transition-transform', collapsed[cat] && !q && '-rotate-90')} />
               <span className="h-1.5 w-1.5 rounded-full" style={{ background: CATEGORY_COLORS[cat] }} />
               {CATEGORY_LABELS[cat] ?? cat}
@@ -61,16 +65,30 @@ export function Library({ catalog, onAdd }: { catalog: NodeCatalogEntry[]; onAdd
                     }}
                     onClick={() => e.enabled && onAdd(e)}
                     onKeyDown={(ev) => ev.key === 'Enter' && e.enabled && onAdd(e)}
-                    className={cx('group flex cursor-grab items-start gap-2.5 rounded-lg px-2 py-1.5 hover:bg-hover', !e.enabled && 'cursor-not-allowed opacity-50')}
+                    className={cx(
+                      'group flex cursor-grab items-start gap-2.5 rounded-lg px-2 py-1.5 hover:bg-hover',
+                      !e.enabled && 'cursor-not-allowed opacity-50',
+                    )}
                   >
-                    <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md" style={{ background: `${CATEGORY_COLORS[e.category]}1a`, color: CATEGORY_COLORS[e.category] }}>
+                    <div
+                      className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md"
+                      style={{ background: `${CATEGORY_COLORS[e.category]}1a`, color: CATEGORY_COLORS[e.category] }}
+                    >
                       <NodeIcon name={e.icon} size={13} />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 text-[12.5px] text-ink">
                         <span className="truncate">{e.displayName}</span>
                         {!e.enabled ? <Lock size={11} className="shrink-0 text-warn" /> : null}
-                        {e.status === 'requires-setup' ? <Badge tone="warn" className="!px-1 !text-[9.5px]">setup</Badge> : e.status === 'beta' ? <Badge tone="violet" className="!px-1 !text-[9.5px]">beta</Badge> : null}
+                        {e.status === 'requires-setup' ? (
+                          <Badge tone="warn" className="!px-1 !text-[9.5px]">
+                            setup
+                          </Badge>
+                        ) : e.status === 'beta' ? (
+                          <Badge tone="violet" className="!px-1 !text-[9.5px]">
+                            beta
+                          </Badge>
+                        ) : null}
                       </div>
                       <div className="line-clamp-2 text-[11px] leading-snug text-faint">{e.description}</div>
                     </div>

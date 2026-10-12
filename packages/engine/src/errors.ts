@@ -47,13 +47,23 @@ export function isAbortError(err: unknown): boolean {
   return err instanceof Error && (err.name === 'AbortError' || err.name === 'TimeoutError');
 }
 
-const RETRYABLE_SYSTEM_CODES = new Set(['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'EAI_AGAIN', 'EPIPE', 'ENOTFOUND', 'EBUSY', 'UND_ERR_CONNECT_TIMEOUT', 'UND_ERR_SOCKET']);
+const RETRYABLE_SYSTEM_CODES = new Set([
+  'ECONNRESET',
+  'ECONNREFUSED',
+  'ETIMEDOUT',
+  'EAI_AGAIN',
+  'EPIPE',
+  'ENOTFOUND',
+  'EBUSY',
+  'UND_ERR_CONNECT_TIMEOUT',
+  'UND_ERR_SOCKET',
+]);
 
 export function classifyError(err: unknown): { retryable: boolean; retryAfterMs?: number } {
   if (err instanceof NodeError) return { retryable: err.retryable, retryAfterMs: err.retryAfterMs };
   const code = (err as { code?: unknown } | null)?.code;
   if (typeof code === 'string' && RETRYABLE_SYSTEM_CODES.has(code)) return { retryable: true };
-  const causeCode = ((err as { cause?: { code?: unknown } } | null)?.cause)?.code;
+  const causeCode = (err as { cause?: { code?: unknown } } | null)?.cause?.code;
   if (typeof causeCode === 'string' && RETRYABLE_SYSTEM_CODES.has(causeCode)) return { retryable: true };
   return { retryable: false };
 }

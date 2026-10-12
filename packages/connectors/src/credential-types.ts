@@ -55,5 +55,9 @@ export function credentialType(type: string): CredentialTypeDef | undefined {
 }
 
 export function secretFieldNames(type: string): string[] {
-  return credentialType(type)?.fields.filter((f) => f.secret).map((f) => f.name) ?? [];
+  return (
+    credentialType(type)
+      ?.fields.filter((f) => f.secret)
+      .map((f) => f.name) ?? []
+  );
 }

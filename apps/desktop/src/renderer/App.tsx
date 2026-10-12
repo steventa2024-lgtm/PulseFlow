@@ -57,7 +57,8 @@ function SignIn({ needsSetup, serverMode }: { needsSetup: boolean; serverMode: b
         <Card className="max-w-md p-6">
           <div className="text-[15px] font-semibold">Open PulseFlow from its launch link</div>
           <p className="mt-2 text-xs leading-relaxed text-muted">
-            The local server only accepts requests with its per-launch token. Use the link printed by <code className="text-cyan">pulseflow serve</code> (it ends in <code>#token=…</code>), or open the desktop app.
+            The local server only accepts requests with its per-launch token. Use the link printed by <code className="text-cyan">pulseflow serve</code> (it
+            ends in <code>#token=…</code>), or open the desktop app.
           </p>
         </Card>
       </div>
@@ -182,14 +183,23 @@ function Shell() {
             aria-current={activePath === n.path ? 'page' : undefined}
             data-testid={`nav-${n.label.toLowerCase()}`}
             onClick={() => navigate(n.path)}
-            className={cx('relative flex h-10 w-10 items-center justify-center rounded-xl transition-colors', activePath === n.path ? 'bg-accent/15 text-accent' : 'text-faint hover:bg-hover hover:text-ink')}
+            className={cx(
+              'relative flex h-10 w-10 items-center justify-center rounded-xl transition-colors',
+              activePath === n.path ? 'bg-accent/15 text-accent' : 'text-faint hover:bg-hover hover:text-ink',
+            )}
           >
             {activePath === n.path ? <span className="absolute top-2 bottom-2 -left-2 w-0.5 rounded bg-accent" /> : null}
             <n.icon size={18} strokeWidth={1.8} />
           </button>
         ))}
         <div className="flex-1" />
-        <button type="button" title="Command palette (Ctrl+K)" aria-label="Command palette" onClick={() => setPalette(true)} className="flex h-10 w-10 items-center justify-center rounded-xl text-faint hover:bg-hover hover:text-ink">
+        <button
+          type="button"
+          title="Command palette (Ctrl+K)"
+          aria-label="Command palette"
+          onClick={() => setPalette(true)}
+          className="flex h-10 w-10 items-center justify-center rounded-xl text-faint hover:bg-hover hover:text-ink"
+        >
           <Command size={17} />
         </button>
         <div className="relative">
@@ -207,10 +217,18 @@ function Shell() {
             {unread ? <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-accent" /> : null}
           </button>
           {bell ? (
-            <div className="absolute bottom-0 left-12 z-40 max-h-96 w-80 overflow-y-auto rounded-xl border border-line bg-raised p-1.5 shadow-2xl" onMouseLeave={() => setBell(false)}>
+            <div
+              className="absolute bottom-0 left-12 z-40 max-h-96 w-80 overflow-y-auto rounded-xl border border-line bg-raised p-1.5 shadow-2xl"
+              onMouseLeave={() => setBell(false)}
+            >
               {notifications.data?.length ? (
                 notifications.data.map((n) => (
-                  <button key={n.id} type="button" onClick={() => (n.workflow_id ? navigate(`/workflows/${n.workflow_id}`) : undefined, setBell(false))} className="block w-full rounded-lg px-2.5 py-2 text-left hover:bg-hover">
+                  <button
+                    key={n.id}
+                    type="button"
+                    onClick={() => (n.workflow_id ? navigate(`/workflows/${n.workflow_id}`) : undefined, setBell(false))}
+                    className="block w-full rounded-lg px-2.5 py-2 text-left hover:bg-hover"
+                  >
                     <div className="flex items-center justify-between text-[12.5px] font-medium">
                       {n.title}
                       <span className="text-[10.5px] font-normal text-faint">{relativeTime(n.ts)}</span>
@@ -224,7 +242,10 @@ function Shell() {
             </div>
           ) : null}
         </div>
-        <span className={cx('mt-2 h-2 w-2 rounded-full', live.connected ? 'bg-ok' : 'bg-bad')} title={live.connected ? 'Live updates connected' : 'Live updates disconnected — retrying'} />
+        <span
+          className={cx('mt-2 h-2 w-2 rounded-full', live.connected ? 'bg-ok' : 'bg-bad')}
+          title={live.connected ? 'Live updates connected' : 'Live updates disconnected — retrying'}
+        />
       </nav>
       <main className="flex min-w-0 flex-1 flex-col">{page}</main>
       {palette ? <CommandPalette onClose={() => setPalette(false)} /> : null}
@@ -249,9 +270,20 @@ function CommandPalette({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();
   const items = useMemo<PaletteItem[]>(() => {
     const base: PaletteItem[] = [
-      { id: 'new', label: 'New workflow', icon: <Plus size={14} />, run: async () => navigate(`/workflows/${(await api.createWorkflow({ name: 'Untitled workflow' })).id}`) },
+      {
+        id: 'new',
+        label: 'New workflow',
+        icon: <Plus size={14} />,
+        run: async () => navigate(`/workflows/${(await api.createWorkflow({ name: 'Untitled workflow' })).id}`),
+      },
       ...NAV.map((n) => ({ id: `nav-${n.path}`, label: `Go to ${n.label}`, icon: <n.icon size={14} />, run: () => navigate(n.path) })),
-      ...(workflows.data ?? []).map((w) => ({ id: `wf-${w.id}`, label: w.name, hint: 'workflow', icon: <WorkflowIcon size={14} />, run: () => navigate(`/workflows/${w.id}`) })),
+      ...(workflows.data ?? []).map((w) => ({
+        id: `wf-${w.id}`,
+        label: w.name,
+        hint: 'workflow',
+        icon: <WorkflowIcon size={14} />,
+        run: () => navigate(`/workflows/${w.id}`),
+      })),
       ...(workflows.data ?? []).map((w) => ({
         id: `run-${w.id}`,
         label: `Run “${w.name}”`,
@@ -263,7 +295,13 @@ function CommandPalette({ onClose }: { onClose: () => void }) {
           navigate(`/executions/${r.executionId}`);
         },
       })),
-      ...(templates.data?.templates ?? []).map((t) => ({ id: `tpl-${t.id}`, label: `${t.id} ${t.name}`, hint: 'template', icon: <LayoutTemplate size={14} />, run: () => navigate('/templates') })),
+      ...(templates.data?.templates ?? []).map((t) => ({
+        id: `tpl-${t.id}`,
+        label: `${t.id} ${t.name}`,
+        hint: 'template',
+        icon: <LayoutTemplate size={14} />,
+        run: () => navigate('/templates'),
+      })),
     ];
     const term = q.toLowerCase().trim();
     return (term ? base.filter((i) => i.label.toLowerCase().includes(term)) : base).slice(0, 50);
@@ -275,23 +313,36 @@ function CommandPalette({ onClose }: { onClose: () => void }) {
   };
   return (
     <div className="fixed inset-0 z-50 flex justify-center bg-black/50 pt-[14vh]" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="h-fit w-[560px] overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl" role="dialog" aria-label="Command palette" data-testid="command-palette">
+      <div
+        className="h-fit w-[560px] overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl"
+        role="dialog"
+        aria-label="Command palette"
+        data-testid="command-palette"
+      >
         <input
           autoFocus
           value={q}
           onChange={(e) => (setQ(e.target.value), setIdx(0))}
           onKeyDown={(e) => {
             if (e.key === 'Escape') onClose();
-            else if (e.key === 'ArrowDown') (e.preventDefault(), setIdx((i) => Math.min(items.length - 1, i + 1)));
-            else if (e.key === 'ArrowUp') (e.preventDefault(), setIdx((i) => Math.max(0, i - 1)));
             else if (e.key === 'Enter') choose(items[idx]);
+            else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+              e.preventDefault();
+              setIdx((i) => (e.key === 'ArrowDown' ? Math.min(items.length - 1, i + 1) : Math.max(0, i - 1)));
+            }
           }}
           placeholder="Type a command or search…"
           className="h-12 w-full border-b border-line bg-transparent px-4 text-[14px] placeholder:text-faint focus:outline-none"
         />
         <div className="max-h-[50vh] overflow-y-auto p-1.5">
           {items.map((i, k) => (
-            <button key={i.id} type="button" onMouseEnter={() => setIdx(k)} onClick={() => choose(i)} className={cx('flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13px]', k === idx ? 'bg-accent/15 text-ink' : 'text-muted')}>
+            <button
+              key={i.id}
+              type="button"
+              onMouseEnter={() => setIdx(k)}
+              onClick={() => choose(i)}
+              className={cx('flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13px]', k === idx ? 'bg-accent/15 text-ink' : 'text-muted')}
+            >
               <span className="text-faint">{i.icon}</span>
               <span className="flex-1 truncate">{i.label}</span>
               {i.hint ? <span className="text-[11px] text-faint">{i.hint}</span> : null}

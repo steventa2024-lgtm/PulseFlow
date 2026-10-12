@@ -25,21 +25,31 @@ describe('CSV', () => {
 
 describe('feeds', () => {
   it('parses RSS and Atom entries with stable ids', () => {
-    const rss = parseFeed('<rss><channel><item><guid>1</guid><title>One &amp; two</title><link>https://e.x/1</link><pubDate>Mon, 05 Jan 2026 10:00:00 GMT</pubDate></item></channel></rss>');
+    const rss = parseFeed(
+      '<rss><channel><item><guid>1</guid><title>One &amp; two</title><link>https://e.x/1</link><pubDate>Mon, 05 Jan 2026 10:00:00 GMT</pubDate></item></channel></rss>',
+    );
     expect(rss[0]).toMatchObject({ id: '1', title: 'One & two', link: 'https://e.x/1' });
-    const atom = parseFeed('<feed xmlns="http://www.w3.org/2005/Atom"><entry><id>urn:a</id><title>A</title><link href="https://e.x/a"/><updated>2026-01-05T10:00:00Z</updated></entry></feed>');
+    const atom = parseFeed(
+      '<feed xmlns="http://www.w3.org/2005/Atom"><entry><id>urn:a</id><title>A</title><link href="https://e.x/a"/><updated>2026-01-05T10:00:00Z</updated></entry></feed>',
+    );
     expect(atom[0]).toMatchObject({ id: 'urn:a', title: 'A', link: 'https://e.x/a' });
   });
 
   it('does not expand XML entities (billion laughs)', () => {
-    const evil = '<?xml version="1.0"?><!DOCTYPE lolz [<!ENTITY lol "lol"><!ENTITY lol2 "&lol;&lol;&lol;&lol;">]><rss><channel><item><title>&lol2;</title><guid>x</guid></item></channel></rss>';
+    const evil =
+      '<?xml version="1.0"?><!DOCTYPE lolz [<!ENTITY lol "lol"><!ENTITY lol2 "&lol;&lol;&lol;&lol;">]><rss><channel><item><title>&lol2;</title><guid>x</guid></item></channel></rss>';
     const out = parseFeed(evil);
     expect(JSON.stringify(out)).not.toContain('lollollol');
   });
 });
 
 describe('JSON schema subset', () => {
-  const schema = { type: 'object', required: ['email'], properties: { email: { type: 'string', format: 'email' }, age: { type: 'integer', minimum: 0 } }, additionalProperties: false } as const;
+  const schema = {
+    type: 'object',
+    required: ['email'],
+    properties: { email: { type: 'string', format: 'email' }, age: { type: 'integer', minimum: 0 } },
+    additionalProperties: false,
+  } as const;
   it('accepts valid data and reports precise errors', () => {
     expect(validateJsonSchema({ email: 'a@b.co', age: 3 }, schema)).toEqual([]);
     const errors = validateJsonSchema({ email: 'nope', age: -1, extra: 1 }, schema);

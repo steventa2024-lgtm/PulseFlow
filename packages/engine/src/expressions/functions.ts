@@ -110,7 +110,14 @@ export const FUNCTIONS: Record<string, { fn: Fn; signature: string; description:
     description: 'Length of text, list or object',
   },
   concat: { fn: (_c, ...a) => a.map(toStr).join(''), signature: 'concat(a, b, ...)', description: 'Join values as text' },
-  join: { fn: (_c, a, sep) => toArr(a).map(toStr).join(sep === undefined ? ',' : toStr(sep)), signature: 'join(list, sep)', description: 'Join list' },
+  join: {
+    fn: (_c, a, sep) =>
+      toArr(a)
+        .map(toStr)
+        .join(sep === undefined ? ',' : toStr(sep)),
+    signature: 'join(list, sep)',
+    description: 'Join list',
+  },
   split: { fn: (_c, s, sep) => toStr(s).split(toStr(sep)), signature: 'split(text, sep)', description: 'Split text' },
   replace: {
     fn: (_c, s, find, rep) => toStr(s).split(toStr(find)).join(toStr(rep)),
@@ -148,7 +155,11 @@ export const FUNCTIONS: Record<string, { fn: Fn; signature: string; description:
     signature: 'boolean(value)',
     description: 'Convert to boolean',
   },
-  json: { fn: (_c, v, indent) => JSON.stringify(v, null, indent === undefined ? undefined : toNum(indent)), signature: 'json(value, indent?)', description: 'Serialize JSON' },
+  json: {
+    fn: (_c, v, indent) => JSON.stringify(v, null, indent === undefined ? undefined : toNum(indent)),
+    signature: 'json(value, indent?)',
+    description: 'Serialize JSON',
+  },
   parseJson: {
     fn: (_c, v) => {
       try {

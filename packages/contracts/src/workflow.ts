@@ -89,7 +89,12 @@ export const WorkflowSettingsSchema = z.object({
   timezone: z.string().min(1).max(64).default('UTC'),
   maxConcurrentRuns: z.number().int().min(1).max(64).default(1),
   maxParallelNodes: z.number().int().min(1).max(32).default(2),
-  executionTimeoutMs: z.number().int().min(1000).max(7 * 86_400_000).default(30 * 60_000),
+  executionTimeoutMs: z
+    .number()
+    .int()
+    .min(1000)
+    .max(7 * 86_400_000)
+    .default(30 * 60_000),
   maxItemsPerNode: z.number().int().min(1).max(1_000_000).default(100_000),
   errorWorkflowId: EntityIdSchema.optional(),
   saveExecutionData: z.enum(['all', 'errors', 'none']).default('all'),
@@ -154,7 +159,12 @@ export const SettingsPatchSchema = z.object({
   timezone: z.string().min(1).max(64).optional(),
   maxConcurrentRuns: z.number().int().min(1).max(64).optional(),
   maxParallelNodes: z.number().int().min(1).max(32).optional(),
-  executionTimeoutMs: z.number().int().min(1000).max(7 * 86_400_000).optional(),
+  executionTimeoutMs: z
+    .number()
+    .int()
+    .min(1000)
+    .max(7 * 86_400_000)
+    .optional(),
   maxItemsPerNode: z.number().int().min(1).max(1_000_000).optional(),
   errorWorkflowId: EntityIdSchema.optional(),
   saveExecutionData: z.enum(['all', 'errors', 'none']).optional(),

@@ -177,7 +177,8 @@ async function main(argv: string[]): Promise<number> {
           }
           const rec = host.ctx.workflows.run(wfId, { useDraft: true, wait: false, ...(input ? { payload: input } : {}) }, 'cli');
           const done = await host.ctx.executions.waitFor(rec.id, 30 * 60_000);
-          for (const s of host.ctx.store.steps.list(done.id)) console.log(`${s.state.padEnd(10)} ${s.nodeName}${s.attempt > 1 ? ` (attempt ${s.attempt})` : ''}${s.error ? ` — ${s.error.message}` : ''}`);
+          for (const s of host.ctx.store.steps.list(done.id))
+            console.log(`${s.state.padEnd(10)} ${s.nodeName}${s.attempt > 1 ? ` (attempt ${s.attempt})` : ''}${s.error ? ` — ${s.error.message}` : ''}`);
           console.log(`Execution ${done.id}: ${done.state}${done.error ? ` — ${done.error.message}` : ''}`);
           return done.state === 'succeeded' ? 0 : 1;
         },
@@ -227,7 +228,8 @@ async function main(argv: string[]): Promise<number> {
       if (!file) throw new Error('Usage: pulseflow import <file>');
       return withHost(args, async (host) => {
         const r = host.ctx.workflows.importBundle(readJson(file), 'cli');
-        for (const w of r.workflows) console.log(`Imported ${w.id} ${w.name}${r.issues[w.id]?.length ? ` (${r.issues[w.id]!.length} validation issue(s))` : ''}`);
+        for (const w of r.workflows)
+          console.log(`Imported ${w.id} ${w.name}${r.issues[w.id]?.length ? ` (${r.issues[w.id]!.length} validation issue(s))` : ''}`);
         return 0;
       });
     }

@@ -6,7 +6,11 @@ export const MAIN = [{ name: 'main' }];
 type ManifestInput = Omit<NodeManifest, 'version' | 'inputs' | 'outputs' | 'permissions' | 'risk' | 'status'> &
   Partial<Pick<NodeManifest, 'version' | 'inputs' | 'outputs' | 'permissions' | 'risk' | 'status'>>;
 
-export function defineNode(manifest: ManifestInput, execute: (ctx: NodeExecutionContext) => Promise<NodeOutput>, extra: Partial<NodeDefinition> = {}): NodeDefinition {
+export function defineNode(
+  manifest: ManifestInput,
+  execute: (ctx: NodeExecutionContext) => Promise<NodeOutput>,
+  extra: Partial<NodeDefinition> = {},
+): NodeDefinition {
   return {
     manifest: {
       version: 1,

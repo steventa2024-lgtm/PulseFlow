@@ -16,7 +16,10 @@ export async function sendSmtpMail(cred: CredentialData, msg: EmailMessage): Pro
   });
   try {
     const info = await transport.sendMail({ from: msg.from, to: msg.to, subject: msg.subject, text: msg.text, ...(msg.html ? { html: msg.html } : {}) });
-    return { messageId: String(info.messageId), accepted: (info.accepted as (string | { address: string })[]).map((a) => (typeof a === 'string' ? a : a.address)) };
+    return {
+      messageId: String(info.messageId),
+      accepted: (info.accepted as (string | { address: string })[]).map((a) => (typeof a === 'string' ? a : a.address)),
+    };
   } catch (e) {
     const code = (e as { code?: string; responseCode?: number }).code;
     const responseCode = (e as { responseCode?: number }).responseCode;

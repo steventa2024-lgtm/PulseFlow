@@ -19,10 +19,17 @@ export function CredentialsPage() {
       <div className="mx-auto max-w-4xl px-8 py-7">
         <h1 className="text-xl font-semibold">Credentials</h1>
         <p className="mt-1 mb-5 text-[13px] text-muted">
-          Secrets are encrypted at rest (AES-256-GCM) and are write-only: PulseFlow never shows them again, never includes them in exports, and redacts them from logs and run data.
+          Secrets are encrypted at rest (AES-256-GCM) and are write-only: PulseFlow never shows them again, never includes them in exports, and redacts them
+          from logs and run data.
           {keyProtection ? (
             <span className="ml-1">
-              Encryption key protected by: <b className="text-ink">{keyProtection === 'os-keychain' ? 'the OS keychain (Windows DPAPI / macOS Keychain / libsecret)' : 'a local key file (no OS keychain available)'}</b>.
+              Encryption key protected by:{' '}
+              <b className="text-ink">
+                {keyProtection === 'os-keychain'
+                  ? 'the OS keychain (Windows DPAPI / macOS Keychain / libsecret)'
+                  : 'a local key file (no OS keychain available)'}
+              </b>
+              .
             </span>
           ) : null}
         </p>
@@ -59,7 +66,8 @@ export function CredentialsPage() {
                   <div className="min-w-0 flex-1">
                     <div className="text-[13px] font-medium">{c.name}</div>
                     <div className="text-[11px] text-faint">
-                      {t?.displayName ?? c.type} · fields: {c.fields.join(', ') || '—'} · updated {relativeTime(c.updatedAt)} · <span className="font-mono">{c.id}</span>
+                      {t?.displayName ?? c.type} · fields: {c.fields.join(', ') || '—'} · updated {relativeTime(c.updatedAt)} ·{' '}
+                      <span className="font-mono">{c.id}</span>
                     </div>
                   </div>
                   <Badge>
@@ -116,12 +124,29 @@ export function CredentialsPage() {
           </div>
         ) : null}
       </div>
-      {editing ? <CredentialDialog type={editing.type} existing={editing.existing} onClose={() => setEditing(null)} onSaved={() => void qc.invalidateQueries({ queryKey: ['credentials'] })} /> : null}
+      {editing ? (
+        <CredentialDialog
+          type={editing.type}
+          existing={editing.existing}
+          onClose={() => setEditing(null)}
+          onSaved={() => void qc.invalidateQueries({ queryKey: ['credentials'] })}
+        />
+      ) : null}
     </div>
   );
 }
 
-function CredentialDialog({ type, existing, onClose, onSaved }: { type: CredentialTypeDef; existing?: CredentialMeta | undefined; onClose: () => void; onSaved: () => void }) {
+function CredentialDialog({
+  type,
+  existing,
+  onClose,
+  onSaved,
+}: {
+  type: CredentialTypeDef;
+  existing?: CredentialMeta | undefined;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
   const [name, setName] = useState(existing?.name ?? type.displayName);
   const [data, setData] = useState<Record<string, string>>({});
   const save = async () => {

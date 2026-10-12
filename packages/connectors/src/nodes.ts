@@ -1,7 +1,10 @@
 import type { Item, NodeManifest } from '@pulseflow/contracts';
 import { NodeError, isRetryableStatus, parseRetryAfter, type HttpResponse, type NodeDefinition, type NodeExecutionContext } from '@pulseflow/engine';
 
-function def(manifest: Omit<NodeManifest, 'version' | 'inputs' | 'outputs' | 'risk' | 'category'> & Partial<NodeManifest>, execute: NodeDefinition['execute']): NodeDefinition {
+function def(
+  manifest: Omit<NodeManifest, 'version' | 'inputs' | 'outputs' | 'risk' | 'category'> & Partial<NodeManifest>,
+  execute: NodeDefinition['execute'],
+): NodeDefinition {
   return { manifest: { version: 1, inputs: [{ name: 'main' }], outputs: [{ name: 'main' }], risk: 'normal', category: 'connector', ...manifest }, execute };
 }
 
@@ -16,7 +19,9 @@ function check(res: HttpResponse, provider: string): void {
   }
   throw new NodeError(`${provider.toUpperCase()}_HTTP_${res.status}`, `${provider} API returned ${res.status}: ${detail}`, {
     retryable: isRetryableStatus(res.status),
-    retryAfterMs: parseRetryAfter(res.headers['retry-after']) ?? (res.headers['x-ratelimit-reset'] && res.status === 403 ? Math.max(0, Number(res.headers['x-ratelimit-reset']) * 1000 - Date.now()) : undefined),
+    retryAfterMs:
+      parseRetryAfter(res.headers['retry-after']) ??
+      (res.headers['x-ratelimit-reset'] && res.status === 403 ? Math.max(0, Number(res.headers['x-ratelimit-reset']) * 1000 - Date.now()) : undefined),
   });
 }
 
@@ -30,7 +35,8 @@ export const githubNode = def(
   {
     type: 'connector.github',
     displayName: 'GitHub',
-    description: 'List issues or releases from a repository via the official REST API. Public repos work without a token (60 requests/hour); a token raises limits and allows private repos.',
+    description:
+      'List issues or releases from a repository via the official REST API. Public repos work without a token (60 requests/hour); a token raises limits and allows private repos.',
     icon: 'Github',
     permissions: ['network'],
     status: 'stable',
@@ -49,16 +55,34 @@ export const githubNode = def(
       },
       { name: 'owner', label: 'Owner', type: 'string', required: true, placeholder: 'electron' },
       { name: 'repo', label: 'Repository', type: 'string', required: true, placeholder: 'electron' },
-      { name: 'state', label: 'Issue state', type: 'select', default: 'open', noExpression: true, options: ['open', 'closed', 'all'].map((v) => ({ label: v, value: v })), showIf: { param: 'operation', equals: ['listIssues'] } },
+      {
+        name: 'state',
+        label: 'Issue state',
+        type: 'select',
+        default: 'open',
+        noExpression: true,
+        options: ['open', 'closed', 'all'].map((v) => ({ label: v, value: v })),
+        showIf: { param: 'operation', equals: ['listIssues'] },
+      },
       { name: 'limit', label: 'Max results', type: 'number', default: 30, min: 1, max: 500, noExpression: true },
       { name: 'credential', label: 'Token (optional)', type: 'credential', credentialType: 'githubToken' },
-      { name: 'apiBaseUrl', label: 'API base URL', type: 'string', default: GITHUB_API, description: 'Change only for GitHub Enterprise Server or the PulseFlow demo fixture.' },
+      {
+        name: 'apiBaseUrl',
+        label: 'API base URL',
+        type: 'string',
+        default: GITHUB_API,
+        description: 'Change only for GitHub Enterprise Server or the PulseFlow demo fixture.',
+      },
     ],
   },
   async (ctx) => {
     const out: Item[] = [];
     const cred = await optionalCredential(ctx, ctx.param('credential'));
-    const headers: Record<string, string> = { accept: 'application/vnd.github+json', 'x-github-api-version': '2022-11-28', ...(cred ? { authorization: `Bearer ${cred.data.token}` } : {}) };
+    const headers: Record<string, string> = {
+      accept: 'application/vnd.github+json',
+      'x-github-api-version': '2022-11-28',
+      ...(cred ? { authorization: `Bearer ${cred.data.token}` } : {}),
+    };
     const base = String(ctx.param('apiBaseUrl') || GITHUB_API).replace(/\/+$/, '');
     const owner = encodeURIComponent(String(ctx.param('owner')));
     const repo = encodeURIComponent(String(ctx.param('repo')));
@@ -69,7 +93,10 @@ export const githubNode = def(
       check(res, 'GitHub');
       return { main: [{ json: res.json() as Record<string, unknown> }] };
     }
-    let url: string | null = op === 'listIssues' ? `${base}/repos/${owner}/${repo}/issues?state=${ctx.param('state')}&per_page=${Math.min(100, limit)}` : `${base}/repos/${owner}/${repo}/releases?per_page=${Math.min(100, limit)}`;
+    let url: string | null =
+      op === 'listIssues'
+        ? `${base}/repos/${owner}/${repo}/issues?state=${ctx.param('state')}&per_page=${Math.min(100, limit)}`
+        : `${base}/repos/${owner}/${repo}/releases?per_page=${Math.min(100, limit)}`;
     while (url && out.length < limit) {
       const res = await ctx.services.http.request({ method: 'GET', url, headers, signal: ctx.signal });
       check(res, 'GitHub');
@@ -97,8 +124,20 @@ export const discordNode = def(
     status: 'requires-setup',
     sideEffects: 'Posts publicly visible messages to a Discord channel.',
     parameters: [
-      { name: 'credential', label: 'Webhook', type: 'credential', credentialType: 'discordWebhook', description: 'Leave empty only when using a demo URL below.' },
-      { name: 'webhookUrlOverride', label: 'Demo/test webhook URL', type: 'string', default: '', description: 'Used when no credential is selected (e.g. the bundled demo fixture).' },
+      {
+        name: 'credential',
+        label: 'Webhook',
+        type: 'credential',
+        credentialType: 'discordWebhook',
+        description: 'Leave empty only when using a demo URL below.',
+      },
+      {
+        name: 'webhookUrlOverride',
+        label: 'Demo/test webhook URL',
+        type: 'string',
+        default: '',
+        description: 'Used when no credential is selected (e.g. the bundled demo fixture).',
+      },
       { name: 'content', label: 'Message', type: 'text', required: true, default: '{{ $json.title }} — {{ $json.link }}' },
       { name: 'username', label: 'Display name', type: 'string', default: 'PulseFlow' },
     ],

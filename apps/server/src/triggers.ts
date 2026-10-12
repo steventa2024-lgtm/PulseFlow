@@ -1,6 +1,15 @@
 import fs from 'node:fs';
 import { newToken, type Item, type NodeInstance, type Workflow, type WorkflowVersion } from '@pulseflow/contracts';
-import { missedRuns, nextCronRun, resolveTemplate, type Clock, type HttpClient, type MissedRunPolicy, type NodeRegistry, type ScopedFs } from '@pulseflow/engine';
+import {
+  missedRuns,
+  nextCronRun,
+  resolveTemplate,
+  type Clock,
+  type HttpClient,
+  type MissedRunPolicy,
+  type NodeRegistry,
+  type ScopedFs,
+} from '@pulseflow/engine';
 import { parseFeed } from '@pulseflow/nodes-core';
 import { sha256Hex } from '@pulseflow/security';
 import type { Store } from '@pulseflow/storage';
@@ -46,7 +55,13 @@ export class TriggerManager {
 
   #status(wfId: string, nodeId: string, patch: Partial<TriggerStatus>): void {
     const ns = this.#ns(wfId, nodeId);
-    const cur = (this.deps.store.kv.get(ns, 'status') as TriggerStatus | undefined) ?? { nodeId, kind: '', lastCheckAt: null, lastFiredAt: null, lastError: null };
+    const cur = (this.deps.store.kv.get(ns, 'status') as TriggerStatus | undefined) ?? {
+      nodeId,
+      kind: '',
+      lastCheckAt: null,
+      lastFiredAt: null,
+      lastError: null,
+    };
     this.deps.store.kv.set(ns, 'status', { ...cur, ...patch });
   }
 
@@ -56,10 +71,22 @@ export class TriggerManager {
     const version = this.deps.store.versions.get(wf.publishedVersionId);
     if (!version) return [];
     return this.#triggerNodes(version).map((n) => {
-      const st = (this.deps.store.kv.get(this.#ns(wfId, n.id), 'status') as TriggerStatus | undefined) ?? { nodeId: n.id, kind: n.type, lastCheckAt: null, lastFiredAt: null, lastError: null };
+      const st = (this.deps.store.kv.get(this.#ns(wfId, n.id), 'status') as TriggerStatus | undefined) ?? {
+        nodeId: n.id,
+        kind: n.type,
+        lastCheckAt: null,
+        lastFiredAt: null,
+        lastError: null,
+      };
       const sched = this.deps.store.schedules.get(wfId, n.id);
       const hook = this.deps.store.webhooks.forWorkflow(wfId).find((h) => h.node_id === n.id);
-      return { ...st, nodeId: n.id, kind: n.type, ...(sched ? { nextRunAt: wf.active ? sched.next_run_at : null } : {}), ...(hook ? { webhookPath: `/hooks/${hook.token}` } : {}) };
+      return {
+        ...st,
+        nodeId: n.id,
+        kind: n.type,
+        ...(sched ? { nextRunAt: wf.active ? sched.next_run_at : null } : {}),
+        ...(hook ? { webhookPath: `/hooks/${hook.token}` } : {}),
+      };
     });
   }
 
@@ -210,7 +237,8 @@ export class TriggerManager {
     };
 
     if (startup && lastRun && policy === 'runOnce') {
-      const due = mode === 'cron' ? missedRuns(expression, tz, lastRun, now, policy) : computeNext(lastRun)!.getTime() <= now.getTime() ? [computeNext(lastRun)!] : [];
+      const due =
+        mode === 'cron' ? missedRuns(expression, tz, lastRun, now, policy) : computeNext(lastRun)!.getTime() <= now.getTime() ? [computeNext(lastRun)!] : [];
       if (due.length) {
         this.deps.log('info', `${wf.name}: running 1 missed schedule (${due[0]!.toISOString()})`);
         this.#fire(wf, version, node, [{ json: { firedAt: now.toISOString(), scheduledFor: due[0]!.toISOString(), missed: true } }]);
@@ -221,7 +249,15 @@ export class TriggerManager {
     let stopped = false;
     const schedule = (after: Date) => {
       const next = computeNext(after);
-      this.deps.store.schedules.upsert({ workflow_id: wf.id, node_id: node.id, kind: mode, expression, timezone: tz, next_run_at: next?.toISOString() ?? null, last_run_at: null });
+      this.deps.store.schedules.upsert({
+        workflow_id: wf.id,
+        node_id: node.id,
+        kind: mode,
+        expression,
+        timezone: tz,
+        next_run_at: next?.toISOString() ?? null,
+        last_run_at: null,
+      });
       if (!next || stopped) return;
       cleanup = this.#at(next, () => {
         const firedAt = this.deps.clock.now();
@@ -276,7 +312,10 @@ export class TriggerManager {
                 fs.closeSync(fd);
               }
             }
-            if (text.length > 0) this.#fire(wf, version, node, [{ json: { path: real, event: st.size < prev.offset ? 'truncated' : 'appended', appendedText: text, size: st.size, modifiedAt: cur.mtime } }]);
+            if (text.length > 0)
+              this.#fire(wf, version, node, [
+                { json: { path: real, event: st.size < prev.offset ? 'truncated' : 'appended', appendedText: text, size: st.size, modifiedAt: cur.mtime } },
+              ]);
           } else {
             this.#fire(wf, version, node, [{ json: { path: real, event: 'changed', size: st.size, modifiedAt: cur.mtime } }]);
           }
@@ -381,7 +420,13 @@ export class TriggerManager {
         const res = await http.request({ method: 'GET', url, timeoutMs: 20_000, maxResponseBytes: 5 * 1024 * 1024 });
         if (res.status >= 400) throw new Error(`Feed returned HTTP ${res.status}`);
         const fresh = parseFeed(res.text()).filter((e) => !this.deps.store.dedupe.checkAndRecord(scope, e.id));
-        if (fresh.length) this.#fire(wf, version, node, fresh.slice(0, 200).map((e) => ({ json: { ...e, feedUrl: url } })));
+        if (fresh.length)
+          this.#fire(
+            wf,
+            version,
+            node,
+            fresh.slice(0, 200).map((e) => ({ json: { ...e, feedUrl: url } })),
+          );
         this.#status(wf.id, node.id, { lastCheckAt: now, lastError: null });
       } catch (e) {
         this.#status(wf.id, node.id, { lastCheckAt: now, lastError: (e as Error).message });

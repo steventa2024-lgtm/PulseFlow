@@ -173,10 +173,13 @@ export const api = {
   setPermissions: (id: string, grants: Omit<PermissionGrants, 'confirmedAt'>) => request<Workflow>('PUT', `/api/workflows/${id}/permissions`, grants),
   triggers: (id: string) => get<TriggerStatus[]>(`/api/workflows/${id}/triggers`),
   rotateWebhook: (id: string, nodeId: string) => post(`/api/workflows/${id}/webhooks/${nodeId}/rotate`),
-  run: (id: string, b: { triggerNodeId?: string; payload?: Record<string, unknown>; useDraft?: boolean; pinned?: Record<string, { json: Record<string, unknown> }[]> } = {}) =>
-    post<{ executionId: string; state: string }>(`/api/workflows/${id}/run`, b),
+  run: (
+    id: string,
+    b: { triggerNodeId?: string; payload?: Record<string, unknown>; useDraft?: boolean; pinned?: Record<string, { json: Record<string, unknown> }[]> } = {},
+  ) => post<{ executionId: string; state: string }>(`/api/workflows/${id}/run`, b),
 
-  executions: (q: { workflowId?: string; state?: string; search?: string; limit?: number; before?: string } = {}) => get<Execution[]>(`/api/executions${qs(q)}`),
+  executions: (q: { workflowId?: string; state?: string; search?: string; limit?: number; before?: string } = {}) =>
+    get<Execution[]>(`/api/executions${qs(q)}`),
   executionStats: (workflowId?: string) => get<Record<string, number>>(`/api/executions/stats${qs({ workflowId })}`),
   execution: (id: string) => get<ExecutionDetail>(`/api/executions/${id}`),
   cancel: (id: string) => post(`/api/executions/${id}/cancel`),

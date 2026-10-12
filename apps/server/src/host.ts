@@ -113,7 +113,12 @@ export async function createHost(config: HostConfig, options: HostOptions = {}):
         has: async (scope, key) => store.dedupe.has(`${kvNs}:${scope}`, key),
       },
       notify: async (n) => {
-        const row = store.notifications.add({ title: n.title.slice(0, 200), body: n.body.slice(0, 2000), workflowId: input.workflowId, executionId: input.executionId });
+        const row = store.notifications.add({
+          title: n.title.slice(0, 200),
+          body: n.body.slice(0, 2000),
+          workflowId: input.workflowId,
+          executionId: input.executionId,
+        });
         bus.emit({ type: 'notification', id: row.id, title: row.title, body: row.body, workflowId: input.workflowId, ts: row.ts });
         options.onNotify?.({ title: row.title, body: row.body, workflowId: input.workflowId });
       },
@@ -137,13 +142,17 @@ export async function createHost(config: HostConfig, options: HostOptions = {}):
           parentExecutionId: opts.parentExecutionId,
           depth: opts.depth,
         });
-        if (outcome.state !== 'succeeded') throw subworkflowError(`Sub-workflow "${target.name}" ${outcome.state} (execution ${record.id}): ${outcome.error?.message ?? ''}`);
+        if (outcome.state !== 'succeeded')
+          throw subworkflowError(`Sub-workflow "${target.name}" ${outcome.state} (execution ${record.id}): ${outcome.error?.message ?? ''}`);
         return outcome.resultItems;
       },
       sendEmail: async (msg) => {
         const cred = credentials.resolve(msg.credentialId, (s) => input.secrets.add(s));
         if (cred.type !== 'smtp') throw new NodeError('INVALID_CREDENTIAL', 'Credential is not an SMTP account');
-        await assertUrlAllowed(`http://${cred.data.host}:${cred.data.port ?? 587}`, { ...networkPolicy(input.settings), allowHosts: [...(networkPolicy(input.settings).allowHosts ?? []), ...(smtpPort ? [`127.0.0.1:${smtpPort}`] : [])] }).catch((e: Error) => {
+        await assertUrlAllowed(`http://${cred.data.host}:${cred.data.port ?? 587}`, {
+          ...networkPolicy(input.settings),
+          allowHosts: [...(networkPolicy(input.settings).allowHosts ?? []), ...(smtpPort ? [`127.0.0.1:${smtpPort}`] : [])],
+        }).catch((e: Error) => {
           throw new NodeError('NETWORK_DENIED', e.message);
         });
         return sendSmtpMail(cred, msg);
@@ -169,9 +178,29 @@ export async function createHost(config: HostConfig, options: HostOptions = {}):
       const v = wf?.publishedVersionId ? store.versions.get(wf.publishedVersionId) : undefined;
       const trigger = v?.graph.nodes.find((n) => n.type === 'core.errorTrigger' && !n.disabled);
       if (!wf || !v || !trigger) continue;
-      const items: Item[] = [{ json: { workflowId: rec.workflowId, workflowName: rec.workflowName, executionId: rec.id, state: rec.state, error: rec.error, failedAt: rec.finishedAt } }];
+      const items: Item[] = [
+        {
+          json: {
+            workflowId: rec.workflowId,
+            workflowName: rec.workflowName,
+            executionId: rec.id,
+            state: rec.state,
+            error: rec.error,
+            failedAt: rec.finishedAt,
+          },
+        },
+      ];
       try {
-        executions.enqueue({ workflowId: wf.id, workflowName: wf.name, versionId: v.id, graph: v.graph, settings: { ...v.settings, permissions: wf.settings.permissions }, triggerNodeId: trigger.id, items, mode: 'trigger' });
+        executions.enqueue({
+          workflowId: wf.id,
+          workflowName: wf.name,
+          versionId: v.id,
+          graph: v.graph,
+          settings: { ...v.settings, permissions: wf.settings.permissions },
+          triggerNodeId: trigger.id,
+          items,
+          mode: 'trigger',
+        });
       } catch (e) {
         log('warn', `Error workflow ${wf.name} could not start: ${(e as Error).message}`);
       }
@@ -197,11 +226,25 @@ export async function createHost(config: HostConfig, options: HostOptions = {}):
     makeFs: (wf: Workflow) => makeFs(wf),
     makeHttp: (wf: Workflow) => makeHttp(wf),
     log,
-    app: { demoDir: config.demoDir, dataDir: config.dataDir, get fixturesUrl() {
-      return fixturesUrl();
-    } },
+    app: {
+      demoDir: config.demoDir,
+      dataDir: config.dataDir,
+      get fixturesUrl() {
+        return fixturesUrl();
+      },
+    },
   });
-  const workflows = new WorkflowService({ store, registry, clock, bus, executions, triggers, credentials, workspaceId: workspace.id, app: { name: 'PulseFlow', version: config.appVersion, demoDir: config.demoDir, fixturesUrl } });
+  const workflows = new WorkflowService({
+    store,
+    registry,
+    clock,
+    bus,
+    executions,
+    triggers,
+    credentials,
+    workspaceId: workspace.id,
+    app: { name: 'PulseFlow', version: config.appVersion, demoDir: config.demoDir, fixturesUrl },
+  });
 
   const ctx: HostContext = {
     config,
@@ -237,7 +280,10 @@ export async function createHost(config: HostConfig, options: HostOptions = {}):
     if (!type.includes('json') || req.url.startsWith('/hooks/')) return done(null, undefined);
     if (!text) return done(null, {});
     try {
-      done(null, JSON.parse(text, (k, v: unknown) => (k === '__proto__' || k === 'constructor' ? undefined : v)));
+      done(
+        null,
+        JSON.parse(text, (k, v: unknown) => (k === '__proto__' || k === 'constructor' ? undefined : v)),
+      );
     } catch {
       done(new HttpError(400, 'INVALID_JSON', 'Request body is not valid JSON'), undefined);
     }
@@ -247,8 +293,17 @@ export async function createHost(config: HostConfig, options: HostOptions = {}):
     done(null, undefined);
   });
 
-  const allowedHosts = () => [`127.0.0.1:${port}`, `localhost:${port}`, ...(config.publicUrl ? [new URL(config.publicUrl).host.toLowerCase()] : []), ...(config.mode === 'server' && config.host !== '127.0.0.1' ? ['*'] : [])];
-  const allowedOrigins = () => [`http://127.0.0.1:${port}`, `http://localhost:${port}`, ...(config.publicUrl ? [new URL(config.publicUrl).origin.toLowerCase()] : [])];
+  const allowedHosts = () => [
+    `127.0.0.1:${port}`,
+    `localhost:${port}`,
+    ...(config.publicUrl ? [new URL(config.publicUrl).host.toLowerCase()] : []),
+    ...(config.mode === 'server' && config.host !== '127.0.0.1' ? ['*'] : []),
+  ];
+  const allowedOrigins = () => [
+    `http://127.0.0.1:${port}`,
+    `http://localhost:${port}`,
+    ...(config.publicUrl ? [new URL(config.publicUrl).origin.toLowerCase()] : []),
+  ];
 
   app.addHook('onRequest', async (req, reply) => {
     const hosts = allowedHosts();
@@ -259,23 +314,30 @@ export async function createHost(config: HostConfig, options: HostOptions = {}):
     reply.header('cross-origin-opener-policy', 'same-origin');
     if (!req.url.startsWith('/api/')) return;
     checkOrigin(req, allowedOrigins);
-    const open = req.url === '/api/health' || req.url.startsWith('/api/app/info') || (config.mode === 'server' && (req.url.startsWith('/api/auth/login') || req.url.startsWith('/api/auth/setup')));
+    const open =
+      req.url === '/api/health' ||
+      req.url.startsWith('/api/app/info') ||
+      (config.mode === 'server' && (req.url.startsWith('/api/auth/login') || req.url.startsWith('/api/auth/setup')));
     if (open) return;
     req.principal = auth.authenticate(req);
     requireRole(req, roleForRequest(req.method));
   });
 
   app.setErrorHandler((err: unknown, _req, reply) => {
-    if (err instanceof HttpError) return reply.code(err.status).send({ error: { code: err.code, message: err.message, ...(err.details !== undefined ? { details: err.details } : {}) } });
+    if (err instanceof HttpError)
+      return reply.code(err.status).send({ error: { code: err.code, message: err.message, ...(err.details !== undefined ? { details: err.details } : {}) } });
     if (err instanceof NodeError) return reply.code(400).send({ error: { code: err.code, message: err.message } });
     const e = err as { statusCode?: number; code?: string; message?: string; validation?: unknown };
-    if (e.statusCode && e.statusCode < 500) return reply.code(e.statusCode).send({ error: { code: e.code ?? 'BAD_REQUEST', message: e.message ?? 'Bad request' } });
-    if ((err as { name?: string }).name === 'ZodError') return reply.code(400).send({ error: { code: 'INVALID_REQUEST', message: 'Invalid request parameters' } });
+    if (e.statusCode && e.statusCode < 500)
+      return reply.code(e.statusCode).send({ error: { code: e.code ?? 'BAD_REQUEST', message: e.message ?? 'Bad request' } });
+    if ((err as { name?: string }).name === 'ZodError')
+      return reply.code(400).send({ error: { code: 'INVALID_REQUEST', message: 'Invalid request parameters' } });
     log('error', `Unhandled API error: ${(err as Error).stack ?? String(err)}`);
     return reply.code(500).send({ error: { code: 'INTERNAL', message: 'Internal error (see logs)' } });
   });
   app.setNotFoundHandler((req, reply) => {
-    if (req.url.startsWith('/api/') || req.url.startsWith('/hooks/') || req.url.startsWith('/demo')) return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Route not found' } });
+    if (req.url.startsWith('/api/') || req.url.startsWith('/hooks/') || req.url.startsWith('/demo'))
+      return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Route not found' } });
     if (config.staticDir && req.method === 'GET') return reply.type('text/html').sendFile('index.html');
     return reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Not found' } });
   });
@@ -309,7 +371,8 @@ export async function createHost(config: HostConfig, options: HostOptions = {}):
   }
 
   const recovery = executions.recover();
-  if (recovery.interrupted || recovery.resumedWaits) log('info', `Recovery: ${recovery.interrupted} interrupted run(s) marked failed, ${recovery.resumedWaits} wait(s) rescheduled`);
+  if (recovery.interrupted || recovery.resumedWaits)
+    log('info', `Recovery: ${recovery.interrupted} interrupted run(s) marked failed, ${recovery.resumedWaits} wait(s) rescheduled`);
   if (options.startTriggers !== false) triggers.startAll({ startup: true });
   const retention = readAppSettings({ store }).retentionDays;
   const pruned = store.executions.prune({ maxAgeDays: retention });

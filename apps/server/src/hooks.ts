@@ -29,7 +29,10 @@ class RateLimiter {
 function parseBody(req: FastifyRequest): unknown {
   const raw = req.rawBody ?? '';
   if (!raw) return {};
-  const type = String(req.headers['content-type'] ?? '').split(';')[0]!.trim().toLowerCase();
+  const type = String(req.headers['content-type'] ?? '')
+    .split(';')[0]!
+    .trim()
+    .toLowerCase();
   if (type === 'application/json' || type.endsWith('+json')) {
     try {
       return safeJsonParse(raw);
@@ -82,10 +85,22 @@ export function registerHooks(app: FastifyInstance, ctx: HostContext): void {
     }
 
     const headers: Record<string, string> = {};
-    for (const [k, v] of Object.entries(req.headers)) if (!DROP_HEADERS.has(k) && k !== String(p.headerName ?? '').toLowerCase()) headers[k] = Array.isArray(v) ? v.join(', ') : String(v ?? '');
+    for (const [k, v] of Object.entries(req.headers))
+      if (!DROP_HEADERS.has(k) && k !== String(p.headerName ?? '').toLowerCase()) headers[k] = Array.isArray(v) ? v.join(', ') : String(v ?? '');
     const query = { ...(req.query as Record<string, string>) };
-    const items: Item[] = [{ json: { method: req.method, headers, query, body: parseBody(req) as Record<string, unknown>, receivedAt: ctx.clock.now().toISOString() } }];
-    const rec = ctx.executions.enqueue({ workflowId: wf.id, workflowName: wf.name, versionId: version.id, graph: version.graph, settings: { ...version.settings, permissions: wf.settings.permissions }, triggerNodeId: node.id, items, mode: 'trigger' });
+    const items: Item[] = [
+      { json: { method: req.method, headers, query, body: parseBody(req) as Record<string, unknown>, receivedAt: ctx.clock.now().toISOString() } },
+    ];
+    const rec = ctx.executions.enqueue({
+      workflowId: wf.id,
+      workflowName: wf.name,
+      versionId: version.id,
+      graph: version.graph,
+      settings: { ...version.settings, permissions: wf.settings.permissions },
+      triggerNodeId: node.id,
+      items,
+      mode: 'trigger',
+    });
 
     const mode = String(p.responseMode ?? 'onReceived');
     if (mode === 'onReceived') return reply.code(202).send({ ok: true, executionId: rec.id });
@@ -102,9 +117,14 @@ export function registerHooks(app: FastifyInstance, ctx: HostContext): void {
       }
     }
     if (done.state !== 'succeeded') return reply.code(500).send({ ok: false, executionId: done.id, error: done.error });
-    const last = ctx.store.steps.list(done.id).filter((s) => s.state === 'succeeded').pop();
+    const last = ctx.store.steps
+      .list(done.id)
+      .filter((s) => s.state === 'succeeded')
+      .pop();
     const lastItems = last ? (outputs[last.nodeId]?.main ?? []) : [];
-    return reply.code(200).send(mode === 'lastNode' ? { ok: true, executionId: done.id, items: lastItems.map((i) => i.json) } : { ok: true, executionId: done.id });
+    return reply
+      .code(200)
+      .send(mode === 'lastNode' ? { ok: true, executionId: done.id, items: lastItems.map((i) => i.json) } : { ok: true, executionId: done.id });
   };
 
   for (const method of ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const) {

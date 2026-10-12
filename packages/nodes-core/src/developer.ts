@@ -34,7 +34,15 @@ export const sqliteQueryNode = defineNode(
           { label: 'Execute (insert/update/delete — modifies the file)', value: 'execute' },
         ],
       },
-      { name: 'query', label: 'SQL', type: 'code', required: true, noExpression: true, default: 'SELECT 1 AS one', description: 'Use ? placeholders; values come from Parameters.' },
+      {
+        name: 'query',
+        label: 'SQL',
+        type: 'code',
+        required: true,
+        noExpression: true,
+        default: 'SELECT 1 AS one',
+        description: 'Use ? placeholders; values come from Parameters.',
+      },
       { name: 'parameters', label: 'Parameters (list)', type: 'text', default: '{{ [] }}' },
     ],
   },
@@ -50,7 +58,9 @@ export const sqliteQueryNode = defineNode(
       const stmt = db.prepare(sql);
       for (let i = 0; i < ctx.items.length; i++) {
         const params = ctx.param('parameters', i);
-        const list = (Array.isArray(params) ? params : []).map((v) => (typeof v === 'boolean' ? (v ? 1 : 0) : v === undefined ? null : typeof v === 'object' && v !== null ? JSON.stringify(v) : v)) as (string | number | null)[];
+        const list = (Array.isArray(params) ? params : []).map((v) =>
+          typeof v === 'boolean' ? (v ? 1 : 0) : v === undefined ? null : typeof v === 'object' && v !== null ? JSON.stringify(v) : v,
+        ) as (string | number | null)[];
         if (op === 'select') {
           for (const row of stmt.all(...list).slice(0, ctx.settings.maxItemsPerNode)) out.push({ json: { ...(row as Record<string, unknown>) } });
         } else {
@@ -86,10 +96,21 @@ interface ProcessResult {
   durationMs: number;
 }
 
-function runProcess(command: string, args: string[], opts: { cwd?: string; env: NodeJS.ProcessEnv; timeoutMs: number; maxOutput: number; input?: string; signal: AbortSignal }): Promise<ProcessResult> {
+function runProcess(
+  command: string,
+  args: string[],
+  opts: { cwd?: string; env: NodeJS.ProcessEnv; timeoutMs: number; maxOutput: number; input?: string; signal: AbortSignal },
+): Promise<ProcessResult> {
   return new Promise((resolve, reject) => {
     const started = Date.now();
-    const child = spawn(command, args, { cwd: opts.cwd, env: opts.env, shell: false, windowsHide: true, detached: process.platform !== 'win32', stdio: ['pipe', 'pipe', 'pipe'] });
+    const child = spawn(command, args, {
+      cwd: opts.cwd,
+      env: opts.env,
+      shell: false,
+      windowsHide: true,
+      detached: process.platform !== 'win32',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
     let stdout = '';
     let stderr = '';
     let timedOut = false;
@@ -148,7 +169,13 @@ export const shellNode = defineNode(
       const cwdRaw = ctx.param<string>('cwd', i);
       const cwd = cwdRaw ? ctx.services.fs.resolveRead(cwdRaw) : undefined;
       const args = (ctx.param<unknown[]>('args', i) ?? []).map(String);
-      const res = await runProcess(String(ctx.rawParam('command')), args, { cwd, env: minimalEnv(), timeoutMs: ctx.param<number>('timeoutMs'), maxOutput: 1_000_000, signal: ctx.signal });
+      const res = await runProcess(String(ctx.rawParam('command')), args, {
+        cwd,
+        env: minimalEnv(),
+        timeoutMs: ctx.param<number>('timeoutMs'),
+        maxOutput: 1_000_000,
+        signal: ctx.signal,
+      });
       if (res.timedOut) throw new NodeError('PROCESS_TIMEOUT', `Program exceeded ${ctx.param<number>('timeoutMs')} ms and was terminated`);
       if (ctx.param('failOnNonZero') && res.exitCode !== 0) throw new NodeError('PROCESS_FAILED', `Exit code ${res.exitCode}: ${res.stderr.slice(0, 500)}`);
       out.push({ json: { ...ctx.items[i]!.json, exitCode: res.exitCode, stdout: res.stdout, stderr: res.stderr, durationMs: res.durationMs } });
@@ -200,13 +227,17 @@ export const codeNode = defineNode(
     assertAdvancedAllowed(ctx);
     const permFlag = process.allowedNodeEnvironmentFlags.has('--permission') ? '--permission' : '--experimental-permission';
     const env: NodeJS.ProcessEnv = { ...minimalEnv(), ...(process.versions.electron ? { ELECTRON_RUN_AS_NODE: '1' } : {}) };
-    const res = await runProcess(process.execPath, [permFlag, `--max-old-space-size=${ctx.param<number>('memoryMb')}`, '--disable-warning=ExperimentalWarning', '-e', CODE_RUNNER], {
-      env,
-      timeoutMs: ctx.param<number>('timeoutMs'),
-      maxOutput: 50 * 1024 * 1024,
-      input: JSON.stringify({ code: ctx.rawParam('code'), items: ctx.items }),
-      signal: ctx.signal,
-    });
+    const res = await runProcess(
+      process.execPath,
+      [permFlag, `--max-old-space-size=${ctx.param<number>('memoryMb')}`, '--disable-warning=ExperimentalWarning', '-e', CODE_RUNNER],
+      {
+        env,
+        timeoutMs: ctx.param<number>('timeoutMs'),
+        maxOutput: 50 * 1024 * 1024,
+        input: JSON.stringify({ code: ctx.rawParam('code'), items: ctx.items }),
+        signal: ctx.signal,
+      },
+    );
     if (res.timedOut) throw new NodeError('CODE_TIMEOUT', `Code exceeded ${ctx.param<number>('timeoutMs')} ms and was terminated`);
     let parsed: { ok: boolean; result?: unknown; error?: string };
     try {

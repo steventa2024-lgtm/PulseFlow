@@ -4,10 +4,12 @@ import { cloneJson, defineNode, requireString, setPath } from './helpers';
 import { throwForStatus } from './network';
 
 const TASK_PROMPTS: Record<string, (input: string, extra: string) => string> = {
-  summarize: (input, extra) => `Summarize the following text in clear Markdown bullet points.${extra ? ` ${extra}` : ''}\n\n--- TEXT START ---\n${input}\n--- TEXT END ---`,
+  summarize: (input, extra) =>
+    `Summarize the following text in clear Markdown bullet points.${extra ? ` ${extra}` : ''}\n\n--- TEXT START ---\n${input}\n--- TEXT END ---`,
   classify: (input, labels) =>
     `Classify the text into exactly one of these labels: ${labels}. Reply with only the label.\n\n--- TEXT START ---\n${input}\n--- TEXT END ---`,
-  extract: (input, extra) => `Extract the following information as a JSON object: ${extra || 'key facts'}. Reply with JSON only.\n\n--- TEXT START ---\n${input}\n--- TEXT END ---`,
+  extract: (input, extra) =>
+    `Extract the following information as a JSON object: ${extra || 'key facts'}. Reply with JSON only.\n\n--- TEXT START ---\n${input}\n--- TEXT END ---`,
   generate: (input, extra) => `${extra}\n\n${input}`.trim(),
 };
 
@@ -57,19 +59,23 @@ export const ollamaNode = defineNode(
       if (task === 'classify' && labels.length < 2) throw new NodeError('PARAM_REQUIRED', 'Provide at least two labels');
       const prompt = TASK_PROMPTS[task]!(input, task === 'classify' ? labels.join(', ') : String(ctx.param('instructions', i) ?? ''));
       const base = requireString(ctx.param('baseUrl', i), 'Ollama URL').replace(/\/+$/, '');
-      const res = await ctx.services.http.request({
-        method: 'POST',
-        url: `${base}/api/generate`,
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ model: ctx.param('model', i), prompt, stream: false, ...(task === 'extract' ? { format: 'json' } : {}) }),
-        timeoutMs: ctx.param<number>('timeoutMs'),
-        signal: ctx.signal,
-      }).catch((e: unknown) => {
-        if (e instanceof NodeError && (e.code === 'HTTP_NETWORK_ERROR' || e.code === 'HTTP_TIMEOUT')) {
-          throw new NodeError('OLLAMA_UNAVAILABLE', `Ollama is not reachable at ${base}. Install it from ollama.com and run "ollama pull <model>".`, { retryable: false });
-        }
-        throw e;
-      });
+      const res = await ctx.services.http
+        .request({
+          method: 'POST',
+          url: `${base}/api/generate`,
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ model: ctx.param('model', i), prompt, stream: false, ...(task === 'extract' ? { format: 'json' } : {}) }),
+          timeoutMs: ctx.param<number>('timeoutMs'),
+          signal: ctx.signal,
+        })
+        .catch((e: unknown) => {
+          if (e instanceof NodeError && (e.code === 'HTTP_NETWORK_ERROR' || e.code === 'HTTP_TIMEOUT')) {
+            throw new NodeError('OLLAMA_UNAVAILABLE', `Ollama is not reachable at ${base}. Install it from ollama.com and run "ollama pull <model>".`, {
+              retryable: false,
+            });
+          }
+          throw e;
+        });
       throwForStatus(res);
       const body = res.json() as { response?: string; model?: string; eval_count?: number; total_duration?: number };
       const text = String(body.response ?? '').trim();

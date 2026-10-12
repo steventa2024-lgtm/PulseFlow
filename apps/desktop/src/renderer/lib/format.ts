@@ -3,7 +3,8 @@ export function relativeTime(iso: string | null | undefined, now = Date.now()): 
   const diff = now - Date.parse(iso);
   const abs = Math.abs(diff);
   const fmt = (n: number, unit: string) => `${Math.round(n)} ${unit}${Math.round(n) === 1 ? '' : 's'}`;
-  const out = abs < 45_000 ? 'just now' : abs < 3_600_000 ? fmt(abs / 60_000, 'min') : abs < 86_400_000 ? fmt(abs / 3_600_000, 'hour') : fmt(abs / 86_400_000, 'day');
+  const out =
+    abs < 45_000 ? 'just now' : abs < 3_600_000 ? fmt(abs / 60_000, 'min') : abs < 86_400_000 ? fmt(abs / 3_600_000, 'hour') : fmt(abs / 86_400_000, 'day');
   if (out === 'just now') return out;
   return diff >= 0 ? `${out} ago` : `in ${out}`;
 }

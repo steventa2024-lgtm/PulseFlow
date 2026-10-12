@@ -1,4 +1,14 @@
-import { Background, BackgroundVariant, Controls, MiniMap, ReactFlow, ReactFlowProvider, useReactFlow, type Connection, type IsValidConnection } from '@xyflow/react';
+import {
+  Background,
+  BackgroundVariant,
+  Controls,
+  MiniMap,
+  ReactFlow,
+  ReactFlowProvider,
+  useReactFlow,
+  type Connection,
+  type IsValidConnection,
+} from '@xyflow/react';
 import type { NodeCatalogEntry, ValidationIssue, Workflow } from '@pulseflow/contracts';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, CheckCircle2, CircleAlert, Copy, Download, History, Loader2, MoreHorizontal, Play, Redo2, Rocket, Trash2, Undo2 } from 'lucide-react';
@@ -78,7 +88,8 @@ function Editor({ id }: { id: string }) {
     (e) => {
       const cur = useEditor.getState().executionId;
       if ((e.type === 'step.updated' || e.type === 'execution.updated') && e.executionId === cur) {
-        if (e.type === 'step.updated') ed.setRunState(e.nodeId, { state: e.state, attempt: e.attempt, durationMs: e.durationMs ?? null, error: e.error?.message ?? null });
+        if (e.type === 'step.updated')
+          ed.setRunState(e.nodeId, { state: e.state, attempt: e.attempt, durationMs: e.durationMs ?? null, error: e.error?.message ?? null });
         void qc.invalidateQueries({ queryKey: ['execution', cur] });
       }
       if (e.type === 'execution.updated' && e.workflowId === id) void qc.invalidateQueries({ queryKey: ['executions', { workflowId: id }] });
@@ -102,13 +113,19 @@ function Editor({ id }: { id: string }) {
         baseRevision: s.revision,
       });
       const now = useEditor.getState();
-      const unchanged = now.nodes === snapshot.nodes && now.edges === snapshot.edges && now.settings === snapshot.settings && now.name === snapshot.name && now.description === snapshot.description;
+      const unchanged =
+        now.nodes === snapshot.nodes &&
+        now.edges === snapshot.edges &&
+        now.settings === snapshot.settings &&
+        now.name === snapshot.name &&
+        now.description === snapshot.description;
       useEditor.setState({ workflow: wf, revision: wf.draftRevision, dirty: !unchanged });
       qc.setQueryData(['workflow', wf.id], wf);
       void qc.invalidateQueries({ queryKey: ['workflows'] });
       return wf;
     } catch (e) {
-      if (e instanceof ApiError && e.code === 'REVISION_CONFLICT') toast.error('This workflow was changed elsewhere', 'Reload to get the latest draft. Your unsaved edits are still on screen.');
+      if (e instanceof ApiError && e.code === 'REVISION_CONFLICT')
+        toast.error('This workflow was changed elsewhere', 'Reload to get the latest draft. Your unsaved edits are still on screen.');
       else toast.error('Save failed', e);
       return null;
     } finally {
@@ -204,7 +221,10 @@ function Editor({ id }: { id: string }) {
         if (from) pos = { x: from.position.x + 300, y: from.position.y };
         else {
           const bounds = document.querySelector('.react-flow')?.getBoundingClientRect();
-          pos = rf.screenToFlowPosition({ x: (bounds?.left ?? 0) + (bounds?.width ?? 800) / 2 - 114, y: (bounds?.top ?? 0) + (bounds?.height ?? 600) / 2 - 30 });
+          pos = rf.screenToFlowPosition({
+            x: (bounds?.left ?? 0) + (bounds?.width ?? 800) / 2 - 114,
+            y: (bounds?.top ?? 0) + (bounds?.height ?? 600) / 2 - 30,
+          });
         }
       }
       ed.addNode(entry, pos, position ? null : from?.id);
@@ -251,7 +271,12 @@ function Editor({ id }: { id: string }) {
   const triggers = useMemo(() => catalog.filter((c) => ['core.manualTrigger', 'core.scheduleTrigger', 'core.webhookTrigger'].includes(c.type)), [catalog]);
 
   if (wfQuery.isError) return <div className="p-8 text-sm text-bad">Could not load workflow: {(wfQuery.error as Error).message}</div>;
-  if (!workflow || workflow.id !== id) return <div className="flex h-full items-center justify-center"><Spinner size={20} /></div>;
+  if (!workflow || workflow.id !== id)
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Spinner size={20} />
+      </div>
+    );
 
   return (
     <div className="flex h-full min-w-0 flex-1 flex-col" data-testid="editor">
@@ -292,10 +317,17 @@ function Editor({ id }: { id: string }) {
             type="button"
             data-testid="validation"
             onClick={() => setIssuesOpen((v) => !v)}
-            className={cx('flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs', errors.length ? 'text-bad hover:bg-bad/10' : issues.length ? 'text-warn hover:bg-warn/10' : 'text-ok hover:bg-hover')}
+            className={cx(
+              'flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs',
+              errors.length ? 'text-bad hover:bg-bad/10' : issues.length ? 'text-warn hover:bg-warn/10' : 'text-ok hover:bg-hover',
+            )}
           >
             {issues.length ? <CircleAlert size={14} /> : <CheckCircle2 size={14} />}
-            {errors.length ? `${errors.length} error${errors.length > 1 ? 's' : ''}` : issues.length ? `${issues.length} warning${issues.length > 1 ? 's' : ''}` : 'Valid'}
+            {errors.length
+              ? `${errors.length} error${errors.length > 1 ? 's' : ''}`
+              : issues.length
+                ? `${issues.length} warning${issues.length > 1 ? 's' : ''}`
+                : 'Valid'}
           </button>
           {issuesOpen && issues.length ? (
             <div className="absolute top-9 right-0 z-30 w-96 rounded-xl border border-line bg-raised p-1.5 shadow-2xl">
@@ -323,14 +355,26 @@ function Editor({ id }: { id: string }) {
         <Button icon={<History size={14} />} variant="ghost" onClick={() => setDialog('versions')}>
           Versions
         </Button>
-        <Button icon={<Rocket size={14} />} onClick={() => setDialog('publish')} disabled={errors.length > 0} data-testid="publish" title={errors.length ? 'Fix validation errors to publish' : 'Publish a version'}>
+        <Button
+          icon={<Rocket size={14} />}
+          onClick={() => setDialog('publish')}
+          disabled={errors.length > 0}
+          data-testid="publish"
+          title={errors.length ? 'Fix validation errors to publish' : 'Publish a version'}
+        >
           Publish
         </Button>
         <label className="flex items-center gap-2 rounded-lg border border-line px-2.5 py-1 text-xs text-muted" title="Active workflows run on their triggers">
           Active
           <Switch checked={workflow.active} onChange={(v) => void toggleActive(v)} label="Active" />
         </label>
-        <Button variant="primary" icon={running ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />} onClick={() => void run()} data-testid="run" title="Run the draft (Ctrl+Enter)">
+        <Button
+          variant="primary"
+          icon={running ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
+          onClick={() => void run()}
+          data-testid="run"
+          title="Run the draft (Ctrl+Enter)"
+        >
           Run
         </Button>
         <div className="relative">
@@ -339,10 +383,20 @@ function Editor({ id }: { id: string }) {
           </IconButton>
           {menu ? (
             <div className="absolute top-9 right-0 z-30 w-52 rounded-xl border border-line bg-raised p-1 shadow-2xl" onMouseLeave={() => setMenu(false)}>
-              <MenuItem icon={<Copy size={14} />} onClick={async () => (setMenu(false), navigate(`/workflows/${(await api.duplicateWorkflow(workflow.id)).id}`))}>
+              <MenuItem
+                icon={<Copy size={14} />}
+                onClick={async () => (setMenu(false), navigate(`/workflows/${(await api.duplicateWorkflow(workflow.id)).id}`))}
+              >
                 Duplicate
               </MenuItem>
-              <MenuItem icon={<Download size={14} />} onClick={async () => (setMenu(false), await save(), downloadJson(`${workflow.name.replace(/[^\w-]+/g, '_')}.pulseflow.json`, await api.exportBundle([workflow.id])))}>
+              <MenuItem
+                icon={<Download size={14} />}
+                onClick={async () => (
+                  setMenu(false),
+                  await save(),
+                  downloadJson(`${workflow.name.replace(/[^\w-]+/g, '_')}.pulseflow.json`, await api.exportBundle([workflow.id]))
+                )}
+              >
                 Export (no secrets)
               </MenuItem>
               <MenuItem
@@ -366,7 +420,12 @@ function Editor({ id }: { id: string }) {
       <div className="flex min-h-0 flex-1">
         <Library catalog={catalog} onAdd={(e) => addAt(e)} />
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="relative min-h-0 flex-1" onDragOver={(e) => (e.preventDefault(), (e.dataTransfer.dropEffect = 'move'))} onDrop={onDrop} data-testid="canvas">
+          <div
+            className="relative min-h-0 flex-1"
+            onDragOver={(e) => (e.preventDefault(), (e.dataTransfer.dropEffect = 'move'))}
+            onDrop={onDrop}
+            data-testid="canvas"
+          >
             <ReactFlow
               nodes={nodes}
               edges={edges}
@@ -393,7 +452,10 @@ function Editor({ id }: { id: string }) {
             </ReactFlow>
             {nodes.length === 0 ? (
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <div className="pointer-events-auto rounded-2xl border border-line bg-panel/90 p-6 text-center shadow-2xl backdrop-blur" data-testid="empty-canvas">
+                <div
+                  className="pointer-events-auto rounded-2xl border border-line bg-panel/90 p-6 text-center shadow-2xl backdrop-blur"
+                  data-testid="empty-canvas"
+                >
                   <div className="text-[15px] font-semibold">Start with a trigger</div>
                   <div className="mt-1 mb-4 text-xs text-muted">Pick how this workflow starts. You can drag any node from the Library too.</div>
                   <div className="flex gap-2">
@@ -445,7 +507,11 @@ function Editor({ id }: { id: string }) {
 
 function MenuItem({ icon, children, onClick, danger }: { icon: React.ReactNode; children: React.ReactNode; onClick: () => void; danger?: boolean }) {
   return (
-    <button type="button" onClick={onClick} className={cx('flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[13px] hover:bg-hover', danger ? 'text-bad' : 'text-ink')}>
+    <button
+      type="button"
+      onClick={onClick}
+      className={cx('flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[13px] hover:bg-hover', danger ? 'text-bad' : 'text-ink')}
+    >
       {icon}
       {children}
     </button>

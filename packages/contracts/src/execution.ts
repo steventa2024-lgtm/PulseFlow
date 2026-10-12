@@ -1,29 +1,11 @@
 import type { Item } from './nodes';
 
-export const EXECUTION_STATES = [
-  'queued',
-  'running',
-  'waiting',
-  'succeeded',
-  'failed',
-  'cancelled',
-  'timed_out',
-] as const;
+export const EXECUTION_STATES = ['queued', 'running', 'waiting', 'succeeded', 'failed', 'cancelled', 'timed_out'] as const;
 export type ExecutionState = (typeof EXECUTION_STATES)[number];
 
 export const TERMINAL_EXECUTION_STATES: readonly ExecutionState[] = ['succeeded', 'failed', 'cancelled', 'timed_out'];
 
-export const STEP_STATES = [
-  'queued',
-  'running',
-  'succeeded',
-  'failed',
-  'retrying',
-  'skipped',
-  'cancelled',
-  'timed_out',
-  'waiting',
-] as const;
+export const STEP_STATES = ['queued', 'running', 'succeeded', 'failed', 'retrying', 'skipped', 'cancelled', 'timed_out', 'waiting'] as const;
 export type StepState = (typeof STEP_STATES)[number];
 
 export type ExecutionMode = 'manual' | 'trigger' | 'retry' | 'subworkflow' | 'test' | 'api' | 'cli';

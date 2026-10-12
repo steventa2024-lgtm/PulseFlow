@@ -56,7 +56,18 @@ describe('storage', () => {
     const store = open();
     const ws = store.workspaces.ensureDefault();
     const wf = store.workflows.create({ workspaceId: ws.id, name: 'A', draft: graph, settings: defaultWorkflowSettings() });
-    const mk = () => store.executions.create({ workflowId: wf.id, workflowName: 'A', versionId: null, triggerNodeId: 't', mode: 'manual', triggerItems: [], graph, settings: wf.settings, engineVersion: 'test' });
+    const mk = () =>
+      store.executions.create({
+        workflowId: wf.id,
+        workflowName: 'A',
+        versionId: null,
+        triggerNodeId: 't',
+        mode: 'manual',
+        triggerItems: [],
+        graph,
+        settings: wf.settings,
+        engineVersion: 'test',
+      });
     const a = mk();
     const b = mk();
     expect(store.executions.countQueued(wf.id)).toBe(2);
@@ -70,7 +81,17 @@ describe('storage', () => {
     const store = open();
     const ws = store.workspaces.ensureDefault();
     const wf = store.workflows.create({ workspaceId: ws.id, name: 'A', draft: graph, settings: defaultWorkflowSettings() });
-    const e = store.executions.create({ workflowId: wf.id, workflowName: 'A', versionId: null, triggerNodeId: 't', mode: 'manual', triggerItems: [], graph, settings: wf.settings, engineVersion: 'test' });
+    const e = store.executions.create({
+      workflowId: wf.id,
+      workflowName: 'A',
+      versionId: null,
+      triggerNodeId: 't',
+      mode: 'manual',
+      triggerItems: [],
+      graph,
+      settings: wf.settings,
+      engineVersion: 'test',
+    });
     store.workflows.delete(wf.id);
     expect(store.executions.get(e.id)).toBeUndefined();
   });

@@ -52,7 +52,11 @@ function NodeInspector({ node, credentials, issues }: { node: NodeInstance; cred
             />
             <div className="flex items-center gap-1.5 px-1 text-[11px] text-faint">
               {entry.displayName}
-              {entry.status === 'requires-setup' ? <Badge tone="warn">Requires setup</Badge> : entry.status === 'beta' ? <Badge tone="violet">Beta</Badge> : null}
+              {entry.status === 'requires-setup' ? (
+                <Badge tone="warn">Requires setup</Badge>
+              ) : entry.status === 'beta' ? (
+                <Badge tone="violet">Beta</Badge>
+              ) : null}
               {entry.risk === 'advanced' ? <Badge tone="bad">Advanced</Badge> : null}
             </div>
           </div>
@@ -70,7 +74,14 @@ function NodeInspector({ node, credentials, issues }: { node: NodeInstance; cred
       </div>
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
         {general.map((i, k) => (
-          <div key={k} className={i.severity === 'error' ? 'rounded-lg border border-bad/30 bg-bad/10 p-2 text-xs text-bad' : 'rounded-lg border border-warn/30 bg-warn/10 p-2 text-xs text-warn'}>
+          <div
+            key={k}
+            className={
+              i.severity === 'error'
+                ? 'rounded-lg border border-bad/30 bg-bad/10 p-2 text-xs text-bad'
+                : 'rounded-lg border border-warn/30 bg-warn/10 p-2 text-xs text-warn'
+            }
+          >
             {i.message}
           </div>
         ))}
@@ -78,7 +89,18 @@ function NodeInspector({ node, credentials, issues }: { node: NodeInstance; cred
           entry.parameters.length === 0 ? (
             <div className="text-xs text-faint">This node has no parameters.</div>
           ) : (
-            entry.parameters.filter((p) => isParamVisible(p, node.parameters)).map((p) => <ParamField key={p.name} def={p} value={node.parameters[p.name]} onChange={(v) => setParam(node.id, p.name, v)} credentials={credentials} issue={paramIssue(p.name)} />)
+            entry.parameters
+              .filter((p) => isParamVisible(p, node.parameters))
+              .map((p) => (
+                <ParamField
+                  key={p.name}
+                  def={p}
+                  value={node.parameters[p.name]}
+                  onChange={(v) => setParam(node.id, p.name, v)}
+                  credentials={credentials}
+                  issue={paramIssue(p.name)}
+                />
+              ))
           )
         ) : null}
         {tab === 'settings' ? <NodeSettings node={node} entry={entry} /> : null}
@@ -93,7 +115,9 @@ function NodeInspector({ node, credentials, issues }: { node: NodeInstance; cred
             ) : null}
             <div>
               <div className="mb-1 font-medium text-ink">Permissions</div>
-              <div className="flex flex-wrap gap-1">{entry.permissions.length ? entry.permissions.map((p) => <Badge key={p}>{p}</Badge>) : <span className="text-faint">None</span>}</div>
+              <div className="flex flex-wrap gap-1">
+                {entry.permissions.length ? entry.permissions.map((p) => <Badge key={p}>{p}</Badge>) : <span className="text-faint">None</span>}
+              </div>
             </div>
             {entry.docs ? <p className="whitespace-pre-wrap">{entry.docs}</p> : null}
             <div className="font-mono text-[11px] text-faint">
@@ -101,8 +125,9 @@ function NodeInspector({ node, credentials, issues }: { node: NodeInstance; cred
             </div>
             <div className="rounded-lg border border-line bg-bg p-2.5 text-[11px]">
               <div className="mb-1 font-medium text-ink">Expressions</div>
-              Use <code className="text-cyan">{'{{ $json.field }}'}</code> for the current item, <code className="text-cyan">{"{{ $node['Name'].json.x }}"}</code> for another node, <code className="text-cyan">{'{{ $vars.name }}'}</code> for workflow variables and{' '}
-              <code className="text-cyan">{'{{ $now }}'}</code>. Expressions are parsed safely; arbitrary JavaScript is never evaluated.
+              Use <code className="text-cyan">{'{{ $json.field }}'}</code> for the current item,{' '}
+              <code className="text-cyan">{"{{ $node['Name'].json.x }}"}</code> for another node, <code className="text-cyan">{'{{ $vars.name }}'}</code> for
+              workflow variables and <code className="text-cyan">{'{{ $now }}'}</code>. Expressions are parsed safely; arbitrary JavaScript is never evaluated.
             </div>
           </div>
         ) : null}
@@ -134,24 +159,53 @@ function NodeSettings({ node, entry }: { node: NodeInstance; entry: NodeCatalogE
       <div className="grid grid-cols-2 gap-2">
         <div>
           <Label>Max attempts</Label>
-          <Input type="number" min={1} max={20} value={retry.maxAttempts ?? 1} onChange={(e) => updateNode(node.id, { retry: { ...retry, maxAttempts: Math.max(1, Math.min(20, Number(e.target.value) || 1)) } })} />
+          <Input
+            type="number"
+            min={1}
+            max={20}
+            value={retry.maxAttempts ?? 1}
+            onChange={(e) => updateNode(node.id, { retry: { ...retry, maxAttempts: Math.max(1, Math.min(20, Number(e.target.value) || 1)) } })}
+          />
         </div>
         <div>
           <Label>First delay (ms)</Label>
-          <Input type="number" min={0} value={retry.initialDelayMs ?? 1000} onChange={(e) => updateNode(node.id, { retry: { ...retry, initialDelayMs: Math.max(0, Number(e.target.value) || 0) } })} />
+          <Input
+            type="number"
+            min={0}
+            value={retry.initialDelayMs ?? 1000}
+            onChange={(e) => updateNode(node.id, { retry: { ...retry, initialDelayMs: Math.max(0, Number(e.target.value) || 0) } })}
+          />
         </div>
         <div>
           <Label>Backoff ×</Label>
-          <Input type="number" min={1} max={10} step={0.5} value={retry.multiplier ?? 2} onChange={(e) => updateNode(node.id, { retry: { ...retry, multiplier: Math.max(1, Math.min(10, Number(e.target.value) || 1)) } })} />
+          <Input
+            type="number"
+            min={1}
+            max={10}
+            step={0.5}
+            value={retry.multiplier ?? 2}
+            onChange={(e) => updateNode(node.id, { retry: { ...retry, multiplier: Math.max(1, Math.min(10, Number(e.target.value) || 1)) } })}
+          />
         </div>
         <div>
           <Label>Timeout (ms)</Label>
-          <Input type="number" min={1} placeholder="default" value={node.timeoutMs ?? ''} onChange={(e) => updateNode(node.id, e.target.value ? { timeoutMs: Math.max(1, Number(e.target.value)) } : { timeoutMs: undefined })} />
+          <Input
+            type="number"
+            min={1}
+            placeholder="default"
+            value={node.timeoutMs ?? ''}
+            onChange={(e) => updateNode(node.id, e.target.value ? { timeoutMs: Math.max(1, Number(e.target.value)) } : { timeoutMs: undefined })}
+          />
         </div>
       </div>
       <div>
         <Label>Notes</Label>
-        <TextArea value={node.notes ?? ''} className="font-sans text-[13px]" placeholder="Why this node exists…" onChange={(e) => updateNode(node.id, { notes: e.target.value })} />
+        <TextArea
+          value={node.notes ?? ''}
+          className="font-sans text-[13px]"
+          placeholder="Why this node exists…"
+          onChange={(e) => updateNode(node.id, { notes: e.target.value })}
+        />
       </div>
     </div>
   );
@@ -160,7 +214,12 @@ function NodeSettings({ node, entry }: { node: NodeInstance; entry: NodeCatalogE
 function WorkflowInspector({ onReviewPermissions }: { onReviewPermissions: () => void }) {
   const { name, description, settings, workflow } = useEditor();
   const { setMeta, setSettings } = useEditor.getState();
-  const triggers = useQuery({ queryKey: ['triggers', workflow?.id], queryFn: () => api.triggers(workflow!.id), enabled: !!workflow?.publishedVersionId, refetchInterval: 10_000 });
+  const triggers = useQuery({
+    queryKey: ['triggers', workflow?.id],
+    queryFn: () => api.triggers(workflow!.id),
+    enabled: !!workflow?.publishedVersionId,
+    refetchInterval: 10_000,
+  });
   const [newVar, setNewVar] = useState('');
   if (!settings || !workflow) return null;
   const vars = settings.variables;
@@ -191,7 +250,21 @@ function WorkflowInspector({ onReviewPermissions }: { onReviewPermissions: () =>
               <span className="w-28 shrink-0 truncate font-mono text-[11.5px] text-muted" title={k}>
                 {k}
               </span>
-              <Input data-testid={`var-${k}`} value={String(v)} onChange={(e) => setVar(k, typeof v === 'number' && !Number.isNaN(Number(e.target.value)) ? Number(e.target.value) : typeof v === 'boolean' ? e.target.value === 'true' : e.target.value)} className="h-7 font-mono text-xs" />
+              <Input
+                data-testid={`var-${k}`}
+                value={String(v)}
+                onChange={(e) =>
+                  setVar(
+                    k,
+                    typeof v === 'number' && !Number.isNaN(Number(e.target.value))
+                      ? Number(e.target.value)
+                      : typeof v === 'boolean'
+                        ? e.target.value === 'true'
+                        : e.target.value,
+                  )
+                }
+                className="h-7 font-mono text-xs"
+              />
               <IconButton
                 label={`Remove ${k}`}
                 className="h-7 w-7"
@@ -230,11 +303,22 @@ function WorkflowInspector({ onReviewPermissions }: { onReviewPermissions: () =>
           </div>
           <div>
             <Label>Timeout (min)</Label>
-            <Input type="number" min={1} value={Math.round(settings.executionTimeoutMs / 60_000)} onChange={(e) => setSettings({ executionTimeoutMs: Math.max(1, Number(e.target.value) || 1) * 60_000 })} />
+            <Input
+              type="number"
+              min={1}
+              value={Math.round(settings.executionTimeoutMs / 60_000)}
+              onChange={(e) => setSettings({ executionTimeoutMs: Math.max(1, Number(e.target.value) || 1) * 60_000 })}
+            />
           </div>
           <div>
             <Label>Concurrent runs</Label>
-            <Input type="number" min={1} max={64} value={settings.maxConcurrentRuns} onChange={(e) => setSettings({ maxConcurrentRuns: Math.max(1, Math.min(64, Number(e.target.value) || 1)) })} />
+            <Input
+              type="number"
+              min={1}
+              max={64}
+              value={settings.maxConcurrentRuns}
+              onChange={(e) => setSettings({ maxConcurrentRuns: Math.max(1, Math.min(64, Number(e.target.value) || 1)) })}
+            />
           </div>
           <div>
             <Label>Save run data</Label>
@@ -288,7 +372,11 @@ function TriggerList({ workflowId, triggers, onRotated }: { workflowId: string; 
                 <code className="min-w-0 flex-1 truncate rounded bg-raised px-1.5 py-1 font-mono text-[10.5px] text-cyan" title={t.webhookUrl}>
                   {t.webhookUrl}
                 </code>
-                <IconButton label="Copy webhook URL" className="h-6 w-6" onClick={() => void navigator.clipboard.writeText(t.webhookUrl!).then(() => toast.ok('Webhook URL copied'))}>
+                <IconButton
+                  label="Copy webhook URL"
+                  className="h-6 w-6"
+                  onClick={() => void navigator.clipboard.writeText(t.webhookUrl!).then(() => toast.ok('Webhook URL copied'))}
+                >
                   <Copy size={12} />
                 </IconButton>
                 <IconButton
