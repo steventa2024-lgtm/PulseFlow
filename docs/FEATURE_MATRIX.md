@@ -1,6 +1,6 @@
 # Feature matrix
 
-Status words: Implemented, Partial, Planned, Blocked. Counts for this tree: Implemented 18, Partial 8, Planned 6, Blocked 1.
+Status words: Implemented, Partial, Planned, Blocked. Counts for the rows below: Implemented 15, Partial 6, Planned 3, Blocked 1.
 
 | Capability | Design | Implementation | Test | Status | Limitation |
 | --- | --- | --- | --- | --- | --- |
