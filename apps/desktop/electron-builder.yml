@@ -1,0 +1,38 @@
+appId: dev.zeropulse.pulseflow
+productName: PulseFlow
+copyright: Copyright © ZeroPulse contributors. Licensed under Apache-2.0.
+directories:
+  output: release
+  buildResources: assets
+files:
+  - dist/**/*
+  - '!dist/**/*.map'
+  - package.json
+extraMetadata:
+  main: dist/main/main.cjs
+asar: true
+# No native modules: SQLite comes from node:sqlite built into Electron's Node runtime.
+npmRebuild: false
+nodeGypRebuild: false
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: assets/icon.png
+  # Unsigned by default. Users may see a SmartScreen prompt; see docs/SECURITY.md.
+  signAndEditExecutable: false
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: PulseFlow
+  license: ../../LICENSE
+  artifactName: PulseFlow-Setup-${version}.${ext}
+linux:
+  target: [AppImage, tar.gz]
+  category: Development
+  icon: assets/icon.png
+  artifactName: PulseFlow-${version}-${arch}.${ext}
+publish: null

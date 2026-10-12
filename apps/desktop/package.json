@@ -1,0 +1,40 @@
+{
+  "name": "@pulseflow/desktop",
+  "productName": "PulseFlow",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PulseFlow desktop studio",
+  "license": "Apache-2.0",
+  "author": "ZeroPulse",
+  "main": "dist/main/main.cjs",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "build": "node build.mjs",
+    "dev": "node build.mjs --dev && electron .",
+    "dev:renderer": "vite --config vite.config.mts",
+    "start": "electron .",
+    "package:win": "electron-builder --win --config electron-builder.yml",
+    "package:linux": "electron-builder --linux --config electron-builder.yml"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@pulseflow/contracts": "workspace:*",
+    "@pulseflow/server": "workspace:*",
+    "@tailwindcss/vite": "^4.3.3",
+    "@tanstack/react-query": "^5.104.2",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "@xyflow/react": "^12.12.0",
+    "electron": "^44.7.0",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.2",
+    "lucide-react": "^1.55.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.4",
+    "zustand": "^5.0.15"
+  }
+}

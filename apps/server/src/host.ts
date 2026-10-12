@@ -20,6 +20,9 @@ import { TriggerManager } from './triggers';
 import { WorkflowService } from './workflows';
 
 export const DEMO_SMTP_CREDENTIAL_ID = 'cred_demo_smtp';
+
+export const UI_CSP =
+  "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'";
 const OLLAMA_HOSTS = ['127.0.0.1:11434', 'localhost:11434'];
 
 export interface HostContext {
@@ -281,15 +284,14 @@ export async function createHost(config: HostConfig, options: HostOptions = {}):
   registerHooks(app, ctx);
   if (config.fixtures) registerFixtures(app, fixtureState, fixturesUrl);
   if (config.staticDir && fs.existsSync(path.join(config.staticDir, 'index.html'))) {
-    await app.register(fastifyStatic, {
-      root: config.staticDir,
-      index: ['index.html'],
-      setHeaders: (res) => {
-        (res as unknown as { setHeader(k: string, v: string): void }).setHeader(
-          'content-security-policy',
-          "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
-        );
-      },
+    await app.register(fastifyStatic, { root: config.staticDir, index: ['index.html'] });
+    app.addHook('onSend', async (req, reply, payload) => {
+      if (!req.url.startsWith('/api/') && !req.url.startsWith('/hooks/') && !req.url.startsWith('/demo')) {
+        reply.header('content-security-policy', UI_CSP);
+        reply.header('x-content-type-options', 'nosniff');
+        reply.header('referrer-policy', 'no-referrer');
+      }
+      return payload;
     });
   }
 

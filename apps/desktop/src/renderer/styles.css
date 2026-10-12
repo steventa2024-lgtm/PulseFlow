@@ -1,0 +1,106 @@
+@import 'tailwindcss';
+@import '@xyflow/react/dist/style.css';
+
+/* Modern Dark Studio tokens */
+@theme {
+  --color-bg: #0b0f16;
+  --color-panel: #101722;
+  --color-raised: #151f2d;
+  --color-hover: #1b2738;
+  --color-line: #223047;
+  --color-line-strong: #2d3e58;
+  --color-ink: #e6edf7;
+  --color-muted: #94a3b8;
+  --color-faint: #64748b;
+  --color-accent: #3b82f6;
+  --color-accent-strong: #2563eb;
+  --color-cyan: #22d3ee;
+  --color-ok: #22c55e;
+  --color-warn: #f59e0b;
+  --color-bad: #ef4444;
+  --color-violet: #a78bfa;
+  --font-sans: 'Inter', 'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Cascadia Code', 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  --radius-card: 14px;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-strong) transparent;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* xyflow theming */
+.react-flow {
+  --xy-background-color: var(--color-bg);
+  --xy-edge-stroke: #2fb8d3;
+  --xy-edge-stroke-width: 2;
+  --xy-edge-stroke-selected: var(--color-accent);
+  --xy-connectionline-stroke: var(--color-cyan);
+  --xy-handle-background-color: var(--color-raised);
+  --xy-handle-border-color: var(--color-cyan);
+  --xy-minimap-background-color: var(--color-panel);
+  --xy-controls-button-background-color: var(--color-raised);
+  --xy-controls-button-background-color-hover: var(--color-hover);
+  --xy-controls-button-color: var(--color-muted);
+  --xy-controls-button-border-color: var(--color-line);
+  --xy-selection-background-color: rgb(59 130 246 / 0.08);
+  --xy-selection-border: 1px dashed var(--color-accent);
+}
+
+.react-flow__handle {
+  width: 10px;
+  height: 10px;
+  border-width: 2px;
+}
+
+.react-flow__edge.animated path {
+  stroke: var(--color-cyan);
+}
+
+.react-flow__attribution {
+  display: none;
+}
+
+@keyframes pf-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(59 130 246 / 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgb(59 130 246 / 0);
+  }
+}
+
+.pf-running {
+  animation: pf-pulse 1.4s ease-in-out infinite;
+}
