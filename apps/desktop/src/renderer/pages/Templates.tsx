@@ -171,6 +171,11 @@ function TemplateDialog({ summary, onClose }: { summary: TemplateSummary; onClos
               </li>
             ))}
           </ul>
+          {demo && isB ? (
+            <div className="mt-3 rounded-lg border border-cyan/30 bg-cyan/10 p-2.5 text-xs text-cyan" data-testid="demo-network-note">
+              Demo mode: network requests go only to PulseFlow’s local fixture server on 127.0.0.1. The listed service is not contacted.
+            </div>
+          ) : null}
           {summary.requiredCredentials.length && !demo ? (
             <div className="mt-3 rounded-lg border border-warn/30 bg-warn/10 p-2.5 text-xs text-warn">
               Needs: {summary.requiredCredentials.map((c) => c.label).join(', ')}. Add them under Credentials, then select them in the workflow.

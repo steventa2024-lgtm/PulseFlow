@@ -151,7 +151,7 @@ export function Tabs<T extends string>({ tabs, value, onChange, className }: { t
           type="button"
           aria-selected={value === t.id}
           onClick={() => onChange(t.id)}
-          className={cx('relative h-8 rounded-md px-2.5 text-xs font-medium transition-colors', value === t.id ? 'bg-raised text-ink' : 'text-muted hover:text-ink')}
+          className={cx('relative h-8 shrink-0 rounded-md px-2.5 text-xs font-medium whitespace-nowrap transition-colors', value === t.id ? 'bg-raised text-ink' : 'text-muted hover:text-ink')}
         >
           {t.label}
           {t.count ? <span className={cx('ml-1.5 rounded px-1 text-[10px]', value === t.id ? 'bg-accent/20 text-accent' : 'bg-raised text-faint')}>{t.count}</span> : null}

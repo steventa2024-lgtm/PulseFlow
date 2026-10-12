@@ -191,7 +191,7 @@ function WorkflowInspector({ onReviewPermissions }: { onReviewPermissions: () =>
               <span className="w-28 shrink-0 truncate font-mono text-[11.5px] text-muted" title={k}>
                 {k}
               </span>
-              <Input value={String(v)} onChange={(e) => setVar(k, typeof v === 'number' && !Number.isNaN(Number(e.target.value)) ? Number(e.target.value) : typeof v === 'boolean' ? e.target.value === 'true' : e.target.value)} className="h-7 font-mono text-xs" />
+              <Input data-testid={`var-${k}`} value={String(v)} onChange={(e) => setVar(k, typeof v === 'number' && !Number.isNaN(Number(e.target.value)) ? Number(e.target.value) : typeof v === 'boolean' ? e.target.value === 'true' : e.target.value)} className="h-7 font-mono text-xs" />
               <IconButton
                 label={`Remove ${k}`}
                 className="h-7 w-7"

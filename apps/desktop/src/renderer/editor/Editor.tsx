@@ -46,7 +46,8 @@ function Editor({ id }: { id: string }) {
   const wfQuery = useQuery({ queryKey: ['workflow', id], queryFn: () => api.workflow(id), staleTime: Infinity, refetchOnWindowFocus: false });
   const catalogQuery = useQuery({ queryKey: ['nodes'], queryFn: api.nodes });
   const { nodes, edges, dirty, workflow, name, executionId, past, future } = useEditor();
-  const ed = useEditor.getState();
+  // Store actions never change identity; the state object returned by getState() does.
+  const [ed] = useState(() => useEditor.getState());
   const [saving, setSaving] = useState(false);
   const [running, setRunning] = useState(false);
   const [issues, setIssues] = useState<ValidationIssue[]>([]);
