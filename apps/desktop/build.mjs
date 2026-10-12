@@ -23,13 +23,39 @@ const node = {
   define: { 'process.env.PULSEFLOW_DEV': JSON.stringify(dev ? '1' : '') },
 };
 
-await esbuild({ ...node, entryPoints: [path.join(root, 'src/main/main.ts')], outfile: path.join(dist, 'main/main.cjs') });
+const inputs = new Set();
+const record = (result) => Object.keys(result.metafile.inputs).forEach((i) => inputs.add(path.resolve(root, i)));
+
+record(await esbuild({ ...node, metafile: true, entryPoints: [path.join(root, 'src/main/main.ts')], outfile: path.join(dist, 'main/main.cjs') }));
 // Preload runs in a sandboxed renderer: only `electron`'s contextBridge/ipcRenderer are available.
-await esbuild({ ...node, platform: 'browser', entryPoints: [path.join(root, 'src/preload/preload.ts')], outfile: path.join(dist, 'preload/preload.cjs') });
-await esbuild({ ...node, entryPoints: [path.join(root, '../server/src/utility.ts')], outfile: path.join(dist, 'host/utility.cjs') });
+record(
+  await esbuild({
+    ...node,
+    metafile: true,
+    platform: 'browser',
+    entryPoints: [path.join(root, 'src/preload/preload.ts')],
+    outfile: path.join(dist, 'preload/preload.cjs'),
+  }),
+);
+record(await esbuild({ ...node, metafile: true, entryPoints: [path.join(root, '../server/src/utility.ts')], outfile: path.join(dist, 'host/utility.cjs') }));
 
 fs.mkdirSync(path.join(dist, 'assets'), { recursive: true });
 for (const f of fs.readdirSync(path.join(root, 'assets'))) fs.copyFileSync(path.join(root, 'assets', f), path.join(dist, 'assets', f));
 
-if (!skipRenderer) await viteBuild({ configFile: path.join(root, 'vite.config.mts'), logLevel: 'warn' });
+if (!skipRenderer) {
+  await viteBuild({
+    configFile: path.join(root, 'vite.config.mts'),
+    logLevel: 'warn',
+    plugins: [
+      {
+        name: 'pulseflow-module-report',
+        generateBundle() {
+          for (const id of this.getModuleIds()) if (!id.startsWith('\0')) inputs.add(id.split('?')[0]);
+        },
+      },
+    ],
+  });
+}
+// Consumed by scripts/license-audit.mjs to know exactly which third-party packages ship in the app.
+fs.writeFileSync(path.join(dist, 'bundled-modules.json'), `${JSON.stringify([...inputs].sort(), null, 1)}\n`);
 console.log('desktop build complete');
