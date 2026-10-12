@@ -1,0 +1,47 @@
+{
+  "name": "pulseflow",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PulseFlow by ZeroPulse — a free, open-source, local-first workflow automation studio.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "packageManager": "pnpm@10.33.4",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:desktop": "pnpm --filter @pulseflow/desktop dev",
+    "build": "pnpm --filter @pulseflow/server build && pnpm --filter @pulseflow/desktop build",
+    "start:server": "node --disable-warning=ExperimentalWarning apps/server/dist/cli.cjs serve",
+    "typecheck": "pnpm -r --parallel typecheck",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:unit": "vitest run --project unit",
+    "test:templates": "vitest run --project templates",
+    "test:e2e": "playwright test",
+    "test:perf": "vitest run --project perf",
+    "pulseflow": "tsx --disable-warning=ExperimentalWarning apps/server/src/cli.ts",
+    "package:win": "pnpm build && pnpm --filter @pulseflow/desktop package:win",
+    "package:linux": "pnpm build && pnpm --filter @pulseflow/desktop package:linux",
+    "license:audit": "node scripts/license-audit.mjs",
+    "sbom": "node scripts/sbom.mjs",
+    "verify:release": "node scripts/verify-release.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@playwright/test": "^1.56.0",
+    "@types/node": "^22.19.0",
+    "esbuild": "^0.28.2",
+    "eslint": "^9.39.0",
+    "eslint-plugin-react-hooks": "^7.0.0",
+    "globals": "^16.4.0",
+    "prettier": "^3.6.2",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.2",
+    "vitest": "^4.0.0"
+  }
+}

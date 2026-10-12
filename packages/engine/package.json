@@ -1,0 +1,18 @@
+{
+  "name": "@pulseflow/engine",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@pulseflow/contracts": "workspace:*", "@pulseflow/security": "workspace:*", "croner": "^10.0.1"
+  }
+}
