@@ -1,11 +1,11 @@
-import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
-import { mkdtempSync, mkdirSync, readFileSync, copyFileSync, writeFileSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, readFileSync, copyFileSync, writeFileSync, rmSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { deflateSync, crc32 } from "node:zlib";
 import * as esbuild from "esbuild";
+import { run } from "./run-process.mjs";
+import { runDesktopBootCheck } from "./desktop-boot.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const desktop = path.join(root, "apps/desktop");
@@ -95,15 +95,15 @@ function migrationPlugin() {
   };
 }
 
-function run(command, args, cwd) {
-  return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { cwd, stdio: "inherit" });
-    child.on("error", reject);
-    child.on("exit", (code) => {
-      if (code === 0) resolve();
-      else reject(new Error(`${command} ${args.join(" ")} exited ${code ?? "null"}`));
-    });
-  });
+const desktopRequire = createRequire(path.join(desktop, "package.json"));
+
+function packageBin(name, binName) {
+  const pkgPath = desktopRequire.resolve(`${name}/package.json`);
+  const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
+  const binField = pkg.bin;
+  const relative = typeof binField === "string" ? binField : binField?.[binName];
+  if (typeof relative !== "string") throw new Error(`Package ${name} does not expose a ${binName} binary`);
+  return path.resolve(path.dirname(pkgPath), relative);
 }
 
 async function bundle() {
@@ -142,48 +142,14 @@ async function bundle() {
   }
 }
 
-function bootCheck() {
-  const require = createRequire(path.join(desktop, "package.json"));
-  const electronBinary = require("electron");
-  if (typeof electronBinary !== "string") {
-    throw new Error("Could not resolve the Electron binary path");
-  }
-  const home = mkdtempSync(path.join(tmpdir(), "pulseflow-desktop-boot-"));
-  return new Promise((resolve, reject) => {
-    const child = spawn(electronBinary, [path.join(outDir, "boot-check.mjs")], {
-      env: { ...process.env, ELECTRON_RUN_AS_NODE: "1", PULSEFLOW_HOME: home },
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    let stdout = "";
-    let stderr = "";
-    child.stdout.on("data", (chunk) => {
-      stdout += String(chunk);
-    });
-    child.stderr.on("data", (chunk) => {
-      stderr += String(chunk);
-    });
-    const timer = setTimeout(() => {
-      child.kill("SIGKILL");
-      reject(new Error(`Desktop boot check timed out\n${stdout}\n${stderr}`));
-    }, 30_000);
-    child.on("error", (error) => {
-      clearTimeout(timer);
-      reject(error);
-    });
-    child.on("exit", (code) => {
-      clearTimeout(timer);
-      if (code === 0 && stdout.includes("boot-ok")) {
-        console.log(stdout.trim());
-        resolve();
-        return;
-      }
-      reject(new Error(`Desktop boot check failed (${code ?? "null"})\n${stdout}\n${stderr}`));
-    });
-  });
+function electronBinary() {
+  const binary = desktopRequire("electron");
+  if (typeof binary !== "string") throw new Error("Could not resolve the Electron binary path");
+  return binary;
 }
 
 writeIcons();
-await run("pnpm", ["--filter", "@pulseflow/desktop", "exec", "vite", "build"], root);
+await run(process.execPath, [packageBin("vite", "vite"), "build"], { cwd: desktop });
 await bundle();
-await bootCheck();
+await runDesktopBootCheck({ electronBinary: electronBinary(), script: path.join(outDir, "boot-check.mjs") });
 console.log(`Desktop bundle ready at ${outDir}`);
