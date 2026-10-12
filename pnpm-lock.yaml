@@ -77,6 +77,10 @@ importers:
       zod:
         specifier: ^4.1.12
         version: 4.6.7
+    devDependencies:
+      '@pulseflow/testing':
+        specifier: workspace:*
+        version: link:../../packages/testing
 
   packages/connectors:
     dependencies:

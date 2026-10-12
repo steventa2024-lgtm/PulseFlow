@@ -132,7 +132,7 @@ export function registerFixtures(app: FastifyInstance, state: FixtureState, base
     const call = (state.flaky.get(key) ?? 0) + 1;
     state.flaky.set(key, call);
     if (state.flaky.size > 10_000) state.flaky.clear();
-    if (call <= failures) return reply.code(503).header('retry-after', '0').send({ ok: false, call, message: `Synthetic outage (call ${call} of ${failures} failing)` });
+    if (call <= failures) return reply.code(503).send({ ok: false, call, message: `Synthetic outage (call ${call} of ${failures} failing)` });
     return { ok: true, call };
   });
 

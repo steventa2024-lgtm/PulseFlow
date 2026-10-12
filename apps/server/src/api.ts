@@ -14,6 +14,7 @@ import {
   type NodeCatalogEntry,
 } from '@pulseflow/contracts';
 import { CREDENTIAL_TYPES } from '@pulseflow/connectors';
+import { redact } from '@pulseflow/security';
 import { PLANNED_TEMPLATES, TEMPLATES, getTemplate, summarize } from '@pulseflow/templates';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { requireRole } from './auth';
@@ -222,8 +223,9 @@ export function registerApi(app: FastifyInstance, ctx: HostContext): void {
   app.get('/api/executions/:id', async (req) => {
     const rec = ctx.store.executions.get(params(req).id);
     if (!rec) throw new HttpError(404, 'NOT_FOUND', 'Execution not found');
+    const secrets = ctx.credentials.allSecretValues();
     const { graph, settings, triggerItems, pinned, ...meta } = rec;
-    return { ...meta, graph, settings: { ...settings, variables: settings.variables }, triggerItems, pinned, steps: ctx.store.steps.list(rec.id) };
+    return { ...meta, ...redact({ graph, settings, triggerItems, pinned }, { secrets }), steps: ctx.store.steps.list(rec.id) };
   });
   app.post('/api/executions/:id/cancel', async (req) => ctx.executions.cancel(params(req).id, `Cancelled by ${req.principal?.name ?? 'user'}`));
   app.post('/api/executions/:id/retry', async (req) => {

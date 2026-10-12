@@ -279,7 +279,7 @@ export class WorkflowService {
     const parsed = WorkflowBundleSchema.safeParse(raw);
     if (!parsed.success) throw new HttpError(400, 'INVALID_BUNDLE', 'Not a valid PulseFlow bundle', parsed.error.issues.slice(0, 20));
     const bundle = parsed.data;
-    if (sha256Hex(JSON.stringify(bundle.workflows)) !== bundle.manifest.checksum) throw new HttpError(400, 'CHECKSUM_MISMATCH', 'Bundle checksum does not match its contents (file corrupted or edited)');
+    if (sha256Hex(JSON.stringify((raw as { workflows?: unknown }).workflows)) !== bundle.manifest.checksum) throw new HttpError(400, 'CHECKSUM_MISMATCH', 'Bundle checksum does not match its contents (file corrupted or edited)');
     const created: Workflow[] = [];
     const issues: Record<string, ValidationResult['issues']> = {};
     this.deps.store.db.transaction(() => {

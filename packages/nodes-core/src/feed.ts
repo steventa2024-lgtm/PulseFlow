@@ -37,11 +37,11 @@ export function parseFeed(xml: string): FeedEntry[] {
   const rss = doc.rss as { channel?: { item?: unknown } } | undefined;
   if (rss?.channel) {
     return arr(rss.channel.item as Record<string, unknown>[] | Record<string, unknown>).map((it) => {
-      const link = text(it.link);
-      const guid = text(it.guid);
+      const link = decode(text(it.link));
+      const guid = decode(text(it.guid));
       return {
-        id: guid || link || text(it.title),
-        title: text(it.title),
+        id: guid || link || decode(text(it.title)),
+        title: decode(text(it.title)),
         link,
         published: isoOrNull(text(it.pubDate)),
         summary: decode(text(it.description)).slice(0, 2000),
@@ -53,9 +53,9 @@ export function parseFeed(xml: string): FeedEntry[] {
     return arr(feed.entry as Record<string, unknown>[] | Record<string, unknown>).map((it) => {
       const links = arr(it.link as Record<string, unknown>[] | Record<string, unknown>);
       const alt = links.find((l) => !l['@rel'] || l['@rel'] === 'alternate') ?? links[0];
-      const link = alt ? String(alt['@href'] ?? '') : '';
+      const link = alt ? decode(String(alt['@href'] ?? '')) : '';
       return {
-        id: text(it.id) || link,
+        id: decode(text(it.id)) || link,
         title: decode(text(it.title)),
         link,
         published: isoOrNull(text(it.published) || text(it.updated)),
@@ -73,5 +73,11 @@ function decode(s: string): string {
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#39;|&apos;/g, "'")
+    .replace(/&#x([0-9a-f]{1,6});/gi, (m, h: string) => codePoint(parseInt(h, 16), m))
+    .replace(/&#([0-9]{1,7});/g, (m, d: string) => codePoint(parseInt(d, 10), m))
     .replace(/&amp;/g, '&');
+}
+
+function codePoint(n: number, fallback: string): string {
+  return n > 0 && n <= 0x10ffff && (n < 0xd800 || n > 0xdfff) ? String.fromCodePoint(n) : fallback;
 }
