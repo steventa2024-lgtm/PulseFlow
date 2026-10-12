@@ -1,5 +1,6 @@
 appId: dev.zeropulse.pulseflow
 productName: PulseFlow
+executableName: PulseFlow
 copyright: Copyright © ZeroPulse contributors. Licensed under Apache-2.0.
 directories:
   output: release
@@ -31,6 +32,7 @@ nsis:
   license: ../../LICENSE
   artifactName: PulseFlow-Setup-${version}.${ext}
 linux:
+  executableName: pulseflow
   target: [AppImage, tar.gz]
   category: Development
   icon: assets/icon.png
