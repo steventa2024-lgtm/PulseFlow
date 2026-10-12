@@ -55,7 +55,10 @@ const pack = {
     npmRebuild: false,
     nodeGypRebuild: false,
     directories: { output, buildResources: "build" },
-    files: ["dist-electron/**/*", "package.json"],
+    files: [
+      { from: "dist-electron", to: "dist-electron", filter: ["**/*"] },
+      "package.json",
+    ],
     extraResources: [
       { from: "dist", to: "ui" },
       { from: "build/icon.png", to: "icon.png" },
@@ -83,9 +86,11 @@ writeFileSync(path.join(stage, "package.json"), `${JSON.stringify(pack, null, 2)
 
 let failed = false;
 try {
-  runSync(process.execPath, [packageBin("electron-builder", "electron-builder"), "--win", "--x64", `--projectDir=${stage}`], {
-    cwd: stage,
-  });
+  runSync(
+    process.execPath,
+    [packageBin("electron-builder", "electron-builder"), "--win", "--x64", "--publish", "never", `--projectDir=${stage}`],
+    { cwd: stage },
+  );
   const electronBinary = desktopRequire("electron");
   if (typeof electronBinary !== "string") throw new Error("Could not resolve the Electron binary path");
   await runDesktopBootCheck({
@@ -118,9 +123,11 @@ function assertArtifacts(expectInstaller) {
   const asarPath = path.join(unpacked, "resources", "app.asar");
   requireFile(asarPath, 100_000);
   const asar = createRequire(packageBin("electron-builder", "electron-builder"))("@electron/asar");
-  const entries = asar.listPackage(asarPath);
-  for (const required of ["/dist-electron/main.mjs", "/dist-electron/preload.cjs", "/dist-electron/boot-check.mjs"]) {
-    if (!entries.includes(required)) throw new Error(`Packaged app.asar is missing ${required}`);
+  const entries = asar.listPackage(asarPath).map((entry) => entry.replaceAll("\\", "/").replace(/^\/+/, ""));
+  for (const required of ["dist-electron/main.mjs", "dist-electron/preload.cjs", "dist-electron/boot-check.mjs"]) {
+    if (!entries.includes(required)) {
+      throw new Error(`Packaged app.asar is missing ${required}. Found: ${entries.join(", ") || "(empty)"}`);
+    }
   }
   const packedBoot = asar.extractFile(asarPath, "dist-electron/boot-check.mjs").toString("utf8");
   if (!packedBoot.includes("schema_migrations")) {
