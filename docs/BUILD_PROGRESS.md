@@ -4,16 +4,16 @@ This is the status of each build phase with its evidence. "Verified" means an au
 
 ## Last verification run
 
-- Date: 2026-10-12, linux-x64, Node 22.14.0, Electron 44.7.0, under Xvfb
-- Command: `pnpm verify:release --package`
-- Result: **PASS. 15 of 15 gates passed.**
+- Date: 2026-10-13, linux-x64, Node 22.14.0, Electron 44.7.0, under Xvfb
+- Command: `pnpm verify:release` (packaging was not re-run; the 2026-10-12 `--package` run built the Linux AppImage and passed its smoke test)
+- Result: **PASS. 14 of 14 gates passed.**
 
 | Gate                                                                                   | Result      |
 | -------------------------------------------------------------------------------------- | ----------- |
 | typecheck, lint (ESLint), format (Prettier)                                            | passed      |
-| unit (vitest)                                                                          | 66/66       |
+| unit (vitest)                                                                          | 71/71       |
 | templates (vitest, Tier A + B demo)                                                    | 33/33       |
-| perf (1,000 runs in 2.7 s ≈ 369 runs/s; storage history queries ≤ 3 ms; API list 7 ms) | 2/2         |
+| perf (1,000 runs in 2.6 s ≈ 388 runs/s; storage history queries ≤ 3 ms; API list 8 ms) | 2/2         |
 | build                                                                                  | passed      |
 | CLI `templates:test` (all 23 templates, demo path)                                     | 23/23 PASS  |
 | CLI `doctor` (56 node types, 23 templates, schema v1)                                  | passed      |
@@ -21,8 +21,7 @@ This is the status of each build phase with its evidence. "Verified" means an au
 | CycloneDX SBOM                                                                         | written     |
 | secret scan                                                                            | no findings |
 | Electron smoke test                                                                    | passed      |
-| Playwright Electron E2E                                                                | 6/6         |
-| package (Linux AppImage + tar.gz)                                                      | passed      |
+| Playwright Electron E2E (includes the dead-letter tab)                                 | 6/6         |
 
 ## Phases
 
