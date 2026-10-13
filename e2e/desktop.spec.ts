@@ -136,6 +136,9 @@ test('executions page and command palette', async ({ page }) => {
     .first()
     .click();
   await expect(page.getByTestId('executions-page')).toContainText('Save Greeting');
+  await page.getByRole('tab', { name: 'Dead letters' }).click();
+  await expect(page.getByTestId('executions-page')).toContainText('No dead letters');
+  await expect(page.getByTestId('executions-page')).toContainText('the payload comes back here');
   await shot(page, '09-executions');
   await page.getByTestId('nav-settings').click();
   await expect(page.getByTestId('about')).toContainText('PulseFlow sends no usage data');

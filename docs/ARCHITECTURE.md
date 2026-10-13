@@ -56,7 +56,7 @@ Drafts are edited with optimistic revisions. **Publish** creates an immutable, n
 4. **Persist:** each step (inputs, outputs, attempts, timings, redacted logs) goes to `execution_steps`, and progress is streamed over SSE.
 5. **Durable waits:** long `Wait` nodes and resumable executions are stored with a resume time. They survive restarts.
 6. **Recovery:** on startup, runs that were `running` when the process died are marked failed with `INTERRUPTED`, durable waits are rescheduled, and queued runs are resumed. Executions older than `retentionDays` are pruned.
-7. **Failures:** failed trigger-driven runs, and trigger events rejected because the queue is full, are added to the dead-letter queue for replay. You can retry from the failed node, which reuses earlier step outputs.
+7. **Failures:** failed trigger-driven runs, and trigger events rejected because the queue is full, are added to the dead-letter queue. Replay runs the published workflow with the original payload. The letter is removed when the replay is accepted and put back if that run fails or times out. A manual run that fails is not dead-lettered. You can also retry from the failed node, which reuses earlier step outputs.
 
 Concurrency: executions are claimed from the queue in order, with a per-workflow concurrency gate.
 

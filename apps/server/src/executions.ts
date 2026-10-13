@@ -27,6 +27,8 @@ import type { EventBus } from './events';
 
 export const MAX_STORED_STEP_BYTES = 256 * 1024;
 export const MAX_QUEUED_PER_WORKFLOW = 1000;
+/** Set by dead-letter replay. If that run fails or times out, the payload is returned to the queue. */
+export const DLQ_REPLAY_NS = 'dlq-replay';
 const MAX_TIMER_MS = 2 ** 31 - 1;
 
 export interface ServiceFactoryInput {
@@ -45,6 +47,8 @@ export interface ExecutionServiceDeps {
   box: SecretBox;
   buildServices: (input: ServiceFactoryInput) => NodeServices;
   maxConcurrent: number;
+  /** Defaults to {@link MAX_QUEUED_PER_WORKFLOW}. */
+  maxQueuedPerWorkflow?: number;
   globalSecrets: () => string[];
   onFinished?: (rec: ExecutionRecord) => void;
 }
@@ -122,13 +126,10 @@ export class ExecutionService {
 
   enqueue(input: EnqueueInput): ExecutionRecord {
     const { store } = this.deps;
-    if (store.executions.countQueued(input.workflowId) >= MAX_QUEUED_PER_WORKFLOW) {
+    const queuedLimit = this.deps.maxQueuedPerWorkflow ?? MAX_QUEUED_PER_WORKFLOW;
+    if (store.executions.countQueued(input.workflowId) >= queuedLimit) {
       store.deadLetters.add({ workflowId: input.workflowId, reason: 'QUEUE_FULL', payload: { triggerNodeId: input.triggerNodeId, items: input.items } });
-      throw new HttpError(
-        429,
-        'QUEUE_FULL',
-        `Workflow already has ${MAX_QUEUED_PER_WORKFLOW} queued runs; the trigger payload was moved to the dead-letter queue`,
-      );
+      throw new HttpError(429, 'QUEUE_FULL', `Workflow already has ${queuedLimit} queued runs; the trigger payload was moved to the dead-letter queue`);
     }
     const rec = store.executions.create({
       workflowId: input.workflowId,
@@ -301,6 +302,22 @@ export class ExecutionService {
     this.#finalize(rec, outcome);
   }
 
+  /** A replay is removed from the queue when it is accepted. Put it back if that run does not succeed. */
+  #restoreFailedReplay(rec: ExecutionRecord, outcome: ExecutionOutcome): void {
+    const pending = this.deps.store.kv.get(DLQ_REPLAY_NS, rec.id) as
+      { workflowId: string; reason: string; payload: unknown; executionId?: string | null } | undefined;
+    if (!pending) return;
+    if (outcome.state === 'failed' || outcome.state === 'timed_out') {
+      this.deps.store.deadLetters.add({
+        workflowId: pending.workflowId,
+        executionId: rec.id,
+        reason: outcome.error?.code ?? pending.reason,
+        payload: pending.payload,
+      });
+    }
+    if ((TERMINAL_EXECUTION_STATES as readonly string[]).includes(outcome.state)) this.deps.store.kv.delete(DLQ_REPLAY_NS, rec.id);
+  }
+
   #finalize(rec: ExecutionRecord, outcome: ExecutionOutcome): void {
     const { store, clock } = this.deps;
     const now = clock.now().toISOString();
@@ -320,6 +337,7 @@ export class ExecutionService {
         payload: { triggerNodeId: rec.triggerNodeId, items: rec.triggerItems },
       });
     }
+    this.#restoreFailedReplay(rec, outcome);
     this.#emitExecution(rec, outcome.state as ExecutionState, outcome.error);
     const final = store.executions.get(rec.id);
     if (final) this.deps.onFinished?.(final);

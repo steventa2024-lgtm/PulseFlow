@@ -215,6 +215,7 @@ export async function createHost(config: HostConfig, options: HostOptions = {}):
     box,
     buildServices,
     maxConcurrent: config.maxConcurrentExecutions,
+    ...(config.maxQueuedPerWorkflow !== undefined ? { maxQueuedPerWorkflow: config.maxQueuedPerWorkflow } : {}),
     globalSecrets: () => credentials.allSecretValues(),
     onFinished,
   });

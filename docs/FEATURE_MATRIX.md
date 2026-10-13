@@ -104,8 +104,8 @@ Planned, not built: **B08 Browser Automation: Price Watch**, which is listed in 
 | Retries, backoff, timeouts, cancel, onError modes        | Done         | `engine.test.ts`                                                                                                             |
 | Durable waits and crash recovery                         | Done         | `engine.test.ts` ("marks runs interrupted by a crash…")                                                                      |
 | Sub-workflows, retry from failed node                    | Done         | `engine.test.ts`                                                                                                             |
-| Dead-letter queue and replay                             | Done         | API and UI. No dedicated replay test.                                                                                        |
-| Retention pruning                                        | Done         | Runs on host startup. No dedicated test.                                                                                     |
+| Dead-letter queue and replay                             | Done         | `durability-ops.test.ts` (trigger failure, queue overflow, replay success, failed replay restored)                           |
+| Retention pruning                                        | Done         | `storage.test.ts` and a restart test that applies `retentionDays`                                                            |
 | Export/import (checksums, permissions reset, no secrets) | Done         | `api.test.ts`                                                                                                                |
 | Server mode: users, roles, API tokens                    | Done         | `api.test.ts` ("requires an owner setup…")                                                                                   |
 | SSE live events                                          | Done         | `api.test.ts`, E2E                                                                                                           |

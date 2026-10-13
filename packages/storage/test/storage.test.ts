@@ -115,6 +115,70 @@ describe('storage', () => {
     expect(store.kv.get('ns', 'tx')).toBeUndefined();
   });
 
+  it('prunes finished executions by age and per-workflow cap, and cascades steps', () => {
+    const store = open();
+    const ws = store.workspaces.ensureDefault();
+    const wf = store.workflows.create({ workspaceId: ws.id, name: 'A', draft: graph, settings: defaultWorkflowSettings() });
+    const other = store.workflows.create({ workspaceId: ws.id, name: 'B', draft: graph, settings: defaultWorkflowSettings() });
+    const make = (workflowId: string, name: string, state: 'succeeded' | 'failed' | 'running' | 'waiting' | 'queued', queuedAt: string) => {
+      const rec = store.executions.create({
+        workflowId,
+        workflowName: name,
+        versionId: null,
+        triggerNodeId: 't',
+        mode: 'manual',
+        triggerItems: [],
+        graph,
+        settings: wf.settings,
+        engineVersion: 'test',
+      });
+      if (state !== 'queued') store.executions.setState(rec.id, state, state === 'running' || state === 'waiting' ? {} : { finishedAt: queuedAt });
+      db.run('UPDATE executions SET queued_at = ? WHERE id = ?', queuedAt, rec.id);
+      return rec.id;
+    };
+    const old = make(wf.id, 'A', 'succeeded', '2020-01-01T00:00:00.000Z');
+    const recent = make(wf.id, 'A', 'succeeded', new Date().toISOString());
+    const failedOld = make(wf.id, 'A', 'failed', '2020-01-02T00:00:00.000Z');
+    const runningOld = make(wf.id, 'A', 'running', '2020-01-03T00:00:00.000Z');
+    const waitingOld = make(wf.id, 'A', 'waiting', '2020-01-04T00:00:00.000Z');
+    const queuedOld = make(wf.id, 'A', 'queued', '2020-01-05T00:00:00.000Z');
+    const otherOld = make(other.id, 'B', 'succeeded', '2020-01-01T00:00:00.000Z');
+    store.steps.upsert({
+      id: 'step-old',
+      executionId: old,
+      nodeId: 't',
+      nodeName: 'T',
+      nodeType: 'core.manualTrigger',
+      attempt: 1,
+      state: 'succeeded',
+      startedAt: null,
+      finishedAt: null,
+      durationMs: null,
+      input: null,
+      output: null,
+      error: null,
+      logs: [],
+      retryInMs: null,
+      truncated: false,
+    });
+
+    expect(store.executions.prune({ maxAgeDays: 30 })).toBe(3);
+    for (const id of [old, failedOld, otherOld]) expect(store.executions.get(id)).toBeUndefined();
+    expect(store.steps.list(old)).toEqual([]);
+    for (const id of [recent, runningOld, waitingOld, queuedOld]) expect(store.executions.get(id)).toBeDefined();
+
+    const mid = make(wf.id, 'A', 'succeeded', '2024-06-01T00:00:00.000Z');
+    const older = make(wf.id, 'A', 'succeeded', '2024-01-01T00:00:00.000Z');
+    // Newest first: recent, mid, older, then the in-progress rows. Cap 1 deletes finished runs past the newest one.
+    expect(store.executions.prune({ keepPerWorkflow: 1 })).toBe(2);
+    expect(store.executions.get(recent)?.state).toBe('succeeded');
+    expect(store.executions.get(mid)).toBeUndefined();
+    expect(store.executions.get(older)).toBeUndefined();
+    expect(store.executions.get(queuedOld)?.state).toBe('queued');
+    expect(store.executions.get(runningOld)?.state).toBe('running');
+    expect(store.executions.get(waitingOld)?.state).toBe('waiting');
+  });
+
   it('writes a consistent backup that can be reopened', () => {
     const store = open();
     store.kv.set('ns', 'k', 'v');

@@ -62,8 +62,8 @@ export function ExecutionsPage({ initialId }: { initialId?: string }) {
             </>
           ) : (
             <p className="text-xs text-muted">
-              Trigger events that could not be run (for example, a queue overflow or a failed run with dead-lettering enabled). Replay them once the cause is
-              fixed.
+              Trigger payloads that did not finish: the queue was full, or the trigger run failed. Replay runs the published workflow again. If that replay
+              fails, the payload comes back here.
             </p>
           )}
         </div>

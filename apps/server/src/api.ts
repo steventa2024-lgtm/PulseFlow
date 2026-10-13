@@ -19,6 +19,7 @@ import { PLANNED_TEMPLATES, TEMPLATES, getTemplate, summarize } from '@pulseflow
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { requireRole } from './auth';
 import { HttpError } from './credentials';
+import { DLQ_REPLAY_NS } from './executions';
 import type { HostContext } from './host';
 
 function body<T extends z.ZodTypeAny>(schema: T, req: FastifyRequest): z.infer<T> {
@@ -291,12 +292,22 @@ export function registerApi(app: FastifyInstance, ctx: HostContext): void {
     const entry = ctx.store.deadLetters.list(10_000).find((d) => d.id === params(req).id);
     if (!entry) throw new HttpError(404, 'NOT_FOUND', 'Dead letter not found');
     const payload = entry.payload as { triggerNodeId?: string; items?: { json: Record<string, unknown> }[] };
-    const rec = ctx.workflows.run(
-      entry.workflow_id,
-      { useDraft: false, wait: false, ...(payload.triggerNodeId ? { triggerNodeId: payload.triggerNodeId } : {}), items: payload.items ?? [] },
-      actor(req),
-    );
+    // Remove first so a second click cannot start two replays. The run puts the payload back if it fails.
     ctx.store.deadLetters.delete(entry.id);
+    let rec;
+    try {
+      rec = ctx.workflows.run(
+        entry.workflow_id,
+        { useDraft: false, wait: false, ...(payload.triggerNodeId ? { triggerNodeId: payload.triggerNodeId } : {}), items: payload.items ?? [] },
+        actor(req),
+      );
+    } catch (e) {
+      // A full queue already stored this payload as a new dead letter.
+      if (!(e instanceof HttpError && e.code === 'QUEUE_FULL'))
+        ctx.store.deadLetters.add({ workflowId: entry.workflow_id, executionId: entry.execution_id, reason: entry.reason, payload: entry.payload });
+      throw e;
+    }
+    ctx.store.kv.set(DLQ_REPLAY_NS, rec.id, { workflowId: entry.workflow_id, reason: entry.reason, payload: entry.payload, executionId: entry.execution_id });
     return { executionId: rec.id };
   });
   app.get('/api/audit', async (req) => {

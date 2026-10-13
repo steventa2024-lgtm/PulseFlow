@@ -27,6 +27,8 @@ export interface HostConfig {
   logLevel: 'silent' | 'error' | 'warn' | 'info' | 'debug';
   /** Max executions running at once across all workflows. */
   maxConcurrentExecutions: number;
+  /** Max queued (not yet started) runs per workflow before new triggers go to the dead-letter queue. */
+  maxQueuedPerWorkflow?: number;
 }
 
 export function buildConfig(overrides: Partial<HostConfig> & { dataDir?: string } = {}): HostConfig {
@@ -46,6 +48,7 @@ export function buildConfig(overrides: Partial<HostConfig> & { dataDir?: string 
     appVersion: overrides.appVersion ?? APP_VERSION,
     logLevel: overrides.logLevel ?? 'info',
     maxConcurrentExecutions: overrides.maxConcurrentExecutions ?? 4,
+    ...(overrides.maxQueuedPerWorkflow !== undefined ? { maxQueuedPerWorkflow: overrides.maxQueuedPerWorkflow } : {}),
   };
 }
 
