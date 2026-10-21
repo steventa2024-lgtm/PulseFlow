@@ -10,11 +10,15 @@ Dependencies must use OSI-approved permissive licenses (MIT, Apache-2.0, BSD, IS
 
 ## Workflow
 
+The proposed collaboration model is `main` for stable releases, `develop` for integration, and individual `feature/<name>` branches reviewed through pull requests. **The reconstructed baseline and shared develop branch are pending maintainer approval.** Until a develop branch is actually published, ask the maintainer for the agreed pushed implementation branch; do not base implementation work on README-only `main`.
+
+Issue [#1](https://github.com/steventa2024-lgtm/PulseFlow/issues/1), Templates search/filter empty states, is reserved for **ar935**. This takeover leaves that implementation untouched.
+
 1. `pnpm install`
 2. Make your change and add tests next to it: `packages/*/test`, `apps/server/test/{unit,templates,perf}`, or `e2e/`.
 3. Run `pnpm typecheck && pnpm lint && pnpm format:check && pnpm test`.
 4. For UI changes, also run `pnpm test:e2e` (on Linux: `xvfb-run -a pnpm test:e2e`).
-5. Open a PR that describes the behavior change and how you verified it.
+5. Once the maintainer confirms the published collaboration baseline, open a PR against the agreed integration branch that describes the behavior change and how you verified it. Do not push directly to stable or integration branches.
 
 ## Contribution areas
 

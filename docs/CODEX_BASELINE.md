@@ -11,19 +11,19 @@ The original workspace `C:\Users\steve\PulseFlow` was empty. A bounded local sea
 
 ## Environment
 
-Windows x64 build 26300, display version 26H2 (the legacy registry ProductName reports Windows 10 Home). Node 26.8.2, Git 2.55.0.windows.3, GitHub CLI 2.101.0, global pnpm 11.23.0. The repository selects pnpm 10.33.4 and installation used that version and the unchanged lockfile. Installed Electron 44.7.0, Playwright 1.64.0, TypeScript 5.9.3. No C++ toolchain is required for the built-in `node:sqlite` persistence.
+Microsoft Windows 11 Home x64, version 10.0.26300, display version 26H2 (confirmed by Win32_OperatingSystem; the legacy registry ProductName reports Windows 10 Home). Node 26.8.2, Git 2.55.0.windows.3, GitHub CLI 2.101.0, global pnpm 11.23.0. The repository selects pnpm 10.33.4 and installation used that version and the unchanged lockfile. Installed Electron 44.7.0, Playwright 1.64.0, TypeScript 5.9.3. No C++ toolchain is required for the built-in `node:sqlite` persistence.
 
 `pnpm install` passed. Initial warnings: server CLI bin did not exist before the first build; optional electron-winstaller build script was not approved (NSIS is the configured Windows packaging target). Electron runtime downloaded successfully. Restricted-shell pnpm launches stalled; execution/install gates were run with approved local process/network access.
 
 ## Original checks and diagnosis
 
-| Command | Result |
-| --- | --- |
-| pnpm install | PASS |
-| pnpm typecheck | PASS |
-| pnpm lint | PASS |
-| pnpm test | PASS — 106 tests, 11 files |
-| pnpm build | FAIL — inherited home-directory Tailwind 3 PostCSS config |
+| Command             | Result                                                                                        |
+| ------------------- | --------------------------------------------------------------------------------------------- |
+| pnpm install        | PASS                                                                                          |
+| pnpm typecheck      | PASS                                                                                          |
+| pnpm lint           | PASS                                                                                          |
+| pnpm test           | PASS — 106 tests, 11 files                                                                    |
+| pnpm build          | FAIL — inherited home-directory Tailwind 3 PostCSS config                                     |
 | pnpm verify:release | FAIL before repairs; stopped after known failed gates and before completing invalid-build E2E |
 
 The original release attempt also exposed CRLF formatting failures (154 files), `spawnSync pnpm ENOENT` in license/SBOM tools, and failed native smoke because the renderer build was absent. Raw initial logs are retained in `artifacts/baseline/`.

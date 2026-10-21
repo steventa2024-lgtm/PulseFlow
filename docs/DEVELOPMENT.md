@@ -7,6 +7,14 @@
 - Linux GUI tests: `xvfb` (`sudo apt-get install xvfb`)
 - Windows installer on Linux: `wine` (`sudo apt-get install wine64 wine`)
 
+Windows tooling fixes and the verified starting point are recorded in [CODEX_BASELINE.md](CODEX_BASELINE.md). Vite uses an inline PostCSS configuration so unrelated configuration in parent folders cannot change this build. Git attributes enforce LF across Windows/Linux checkouts.
+
+The restored studio uses a 228px sidebar, a 360px configuration panel, a compact sidebar below 1200px, and a configuration drawer below 1280px. Node search opens with **Add node**. **Save** persists the draft; **Run** executes it; **Deploy** publishes and activates automatic triggers locally. Manual-only workflows can be run on demand and published through More actions. Version history compares immutable versions or the current draft, listing changed fields without exposing values.
+
+**Test Node** saves the current draft and submits explicit sample items to `/api/workflows/:id/nodes/:nodeId/test`. It runs only that node (plus an input trigger) through the existing durable engine and persistence layer, with the same grants, credential redaction, advanced-node gate and retention policy. Tests are recorded with execution mode `test`. References to upstream outputs are intentionally unavailable; users must supply sample input. Side effects remain real and are disclosed before execution.
+
+B09 Social Media Automation is demo-only: the backend rejects live instantiation; its graph uses `$app.fixturesUrl` to reach bundled loopback samples and a preview sink. Saved receipts explicitly contain `demo: true` and `published: false`.
+
 ## Layout
 
 ```
@@ -80,6 +88,9 @@ Rules:
 Add a manifest with `t({...})` in `packages/templates/src/tier-a.ts` or `tier-b.ts`. Use `node(...)` and edges to build the graph, `variables` for user-configurable paths and values (`${templateDir}` resolves to a demo folder), and `fixtures` for seed files. Then add an E2E test in `apps/server/test/templates/`. Tier B templates must have a demo mode that points at `/demo/*` fixtures, must label demo output as demo, and must fail clearly when a live credential is missing.
 
 ## Testing tips
+
+- `e2e/studio.spec.ts` launches the real Electron app for responsive checks at 1920×1080, 1440×900, 1280×800 and 1024×800, plus Save/Run/Deploy, permission review, node testing, version comparison, B09, errors, SQLite/DPAPI persistence, and close-to-tray/second-instance restoration. Each test uses an isolated temporary data directory.
+- `node scripts/qa-windows.mjs` runs an additional actual Windows utility-process crash/recovery scenario using isolated data under `artifacts/native-windows/`. Accept the real **Restart engine** dialog when prompted. `--accept-restart` substitutes only the dialog decision for automation and explicitly marks native button interaction NOT TESTED; engine crash, SQLite recovery and durable continuation remain real.
 
 - Host and integration tests use `startTestHost()`, `instantiate()` and `runTemplate()` from `apps/server/test/helpers.ts`. Each host gets a temporary data directory.
 - On Linux, run E2E as `xvfb-run -a pnpm test:e2e`. Screenshots are written to `artifacts/screenshots/`.

@@ -57,7 +57,7 @@ Advanced nodes only run when **Settings → Advanced** is on **and** the workflo
 
 Credential types: `githubToken`, `discordWebhook`, `telegramBot`, `smtp`, `httpBearer`, `httpBasic`, `httpHeader`, `webhookSecret`. Secrets are write-only through the API and UI.
 
-## Templates (23)
+## Templates (24)
 
 ### Tier A: offline (16). Each one has an E2E test in `apps/server/test/templates/tier-a.test.ts`.
 
@@ -80,19 +80,22 @@ Credential types: `githubToken`, `discordWebhook`, `telegramBot`, `smtp`, `httpB
 | A15 | RSS to Reading List        | Each entry saved exactly once                                                           |
 | A16 | Error Recovery Example     | Fails twice, then succeeds with backoff. Exhausting retries fails clearly.              |
 
-### Tier B: connected (7). Demo mode is tested in `apps/server/test/templates/tier-b.test.ts`.
+### Tier B: connected (8, including one demo-only template). Demo mode is tested in `apps/server/test/templates/tier-b.test.ts`.
 
-| ID  | Template                     | Live requirement                               | Demo-mode test                                                             |
-| --- | ---------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------- |
-| B01 | GitHub Release Digest        | GitHub token (optional for public repos)       | Paginates the fixture, writes the 10 newest                                |
-| B02 | RSS to Discord               | Discord webhook                                | Posts each new entry once. Fails `CREDENTIAL_REQUIRED` with no credential. |
-| B03 | Website Monitor → Telegram   | Telegram bot                                   | Alerts on down and on recovery                                             |
-| B04 | Daily Email Digest           | SMTP                                           | Sends only to the local SMTP sink. Rejected with no credential.            |
-| B05 | Webhook Form → Google Sheets | Google OAuth access token (bearer)             | Appends RAW rows to the fixture                                            |
-| B06 | Local AI Note Summarizer     | Ollama running locally                         | Labels fixture output as not-AI                                            |
-| B07 | GitHub Issue Triage Report   | GitHub (token optional), optional local Ollama | Classifies issues (PRs excluded) into a CSV                                |
+| ID  | Template                     | Live requirement                               | Demo-mode test                                                                                                   |
+| --- | ---------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| B01 | GitHub Release Digest        | GitHub token (optional for public repos)       | Paginates the fixture, writes the 10 newest                                                                      |
+| B02 | RSS to Discord               | Discord webhook                                | Posts each new entry once. Fails `CREDENTIAL_REQUIRED` with no credential.                                       |
+| B03 | Website Monitor → Telegram   | Telegram bot                                   | Alerts on down and on recovery                                                                                   |
+| B04 | Daily Email Digest           | SMTP                                           | Sends only to the local SMTP sink. Rejected with no credential.                                                  |
+| B05 | Webhook Form → Google Sheets | Google OAuth access token (bearer)             | Appends RAW rows to the fixture                                                                                  |
+| B06 | Local AI Note Summarizer     | Ollama running locally                         | Labels fixture output as not-AI                                                                                  |
+| B07 | GitHub Issue Triage Report   | GitHub (token optional), optional local Ollama | Classifies issues (PRs excluded) into a CSV                                                                      |
+| B09 | Social Media Automation      | Demo only; live instantiation rejected         | Filters bundled approved samples, records local previews with `published: false`, and writes a JSON receipt file |
 
 A shared test asserts that live variables point at real provider endpoints, not fixtures. **Live mode against real providers is not exercised by automated tests**: that would need real accounts and secrets.
+
+The Modern Dark Studio reconstruction and actual Windows 11 evidence are recorded in [CODEX_HANDOFF.md](CODEX_HANDOFF.md). The 56 existing node types, persistence schema, credential protections and engine remain in place. New UI actions are covered by real Electron tests in `e2e/studio.spec.ts`; isolated node execution is covered by `node-test.test.ts`. The earlier packaging notes below describe the original published checkpoint; the handoff records this takeover's native results and limitations.
 
 Planned, not built: **B08 Browser Automation: Price Watch**, which is listed in the gallery as "planned".
 
