@@ -12,6 +12,8 @@ export default defineConfig({
   root: path.resolve(__dirname, 'src/renderer'),
   base: './',
   plugins: [react(), tailwindcss()],
+  // Do not inherit unrelated PostCSS configs from a developer's home directory.
+  css: { postcss: { plugins: [] } },
   build: {
     outDir: path.resolve(__dirname, 'dist/renderer'),
     emptyOutDir: true,

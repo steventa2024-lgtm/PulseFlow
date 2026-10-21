@@ -48,7 +48,7 @@ function classify(license, shipped) {
 }
 
 function pkgNameFromPath(p) {
-  const parts = p.split('node_modules/').pop().split('/');
+  const parts = p.replaceAll('\\', '/').split('node_modules/').pop().split('/');
   return parts[0].startsWith('@') ? `${parts[0]}/${parts[1]}` : parts[0];
 }
 
@@ -61,7 +61,9 @@ function licenseText(dir) {
   }
 }
 
-const raw = JSON.parse(execFileSync('pnpm', ['licenses', 'list', '--json'], { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }));
+const raw = JSON.parse(
+  execFileSync('pnpm', ['licenses', 'list', '--json'], { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, shell: process.platform === 'win32' }),
+);
 const shippedNames = fs.existsSync(bundledFile)
   ? new Set(
       JSON.parse(fs.readFileSync(bundledFile, 'utf8'))

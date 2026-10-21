@@ -8,14 +8,16 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
-const raw = JSON.parse(execFileSync('pnpm', ['licenses', 'list', '--json'], { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }));
+const raw = JSON.parse(
+  execFileSync('pnpm', ['licenses', 'list', '--json'], { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, shell: process.platform === 'win32' }),
+);
 const bundledFile = path.join(root, 'apps/desktop/dist/bundled-modules.json');
 const shipped = fs.existsSync(bundledFile)
   ? new Set(
       JSON.parse(fs.readFileSync(bundledFile, 'utf8'))
         .filter((p) => p.includes('node_modules'))
         .map((p) => {
-          const parts = p.split('node_modules/').pop().split('/');
+          const parts = p.replaceAll('\\', '/').split('node_modules/').pop().split('/');
           return parts[0].startsWith('@') ? `${parts[0]}/${parts[1]}` : parts[0];
         }),
     )

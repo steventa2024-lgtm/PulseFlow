@@ -6,6 +6,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+// pnpm is a .cmd shim on Windows; run its JS entry point without a shell.
+const pnpmCommand = (args) => (process.env.npm_execpath ? [process.execPath, [process.env.npm_execpath, ...args]] : ['pnpm', args]);
 const port = process.env.PULSEFLOW_PORT ?? '5199';
 const token = process.env.PULSEFLOW_TOKEN ?? crypto.randomBytes(18).toString('base64url');
 const env = {
@@ -17,12 +19,15 @@ const env = {
 };
 
 const children = [
-  spawn('pnpm', ['--filter', '@pulseflow/server', 'exec', 'tsx', 'watch', '--disable-warning=ExperimentalWarning', 'src/cli.ts', 'serve', '--port', port], {
-    cwd: root,
-    env,
-    stdio: 'inherit',
-  }),
-  spawn('pnpm', ['--filter', '@pulseflow/desktop', 'dev:renderer'], { cwd: root, env, stdio: 'inherit' }),
+  spawn(
+    ...pnpmCommand(['--filter', '@pulseflow/server', 'exec', 'tsx', 'watch', '--disable-warning=ExperimentalWarning', 'src/cli.ts', 'serve', '--port', port]),
+    {
+      cwd: root,
+      env,
+      stdio: 'inherit',
+    },
+  ),
+  spawn(...pnpmCommand(['--filter', '@pulseflow/desktop', 'dev:renderer']), { cwd: root, env, stdio: 'inherit' }),
 ];
 setTimeout(() => console.log(`\n  PulseFlow dev UI: http://localhost:5173/#token=${token}\n`), 2500);
 
