@@ -34,6 +34,8 @@ After reconstruction, `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build
 
 The final complete release run, including the optional Windows packaging gate, is recorded at `artifacts/verification/summary.md` and `summary.json`. Raw logs are in `artifacts/verification/` and `artifacts/final-release.log`. These reports are local artifacts, not remote CI claims.
 
+The first complete reconstruction run passed every execution/build/packaging gate but failed formatting on `CODEX_BASELINE.md` while that handoff text was being updated. Formatting was corrected and checked before the final frozen-checkout run. Its original report is retained in `artifacts/previous-release/`. The unsigned NSIS installer was built on this Windows host, and `win-unpacked/PulseFlow.exe --smoke-test` passed with `ok: true` and `keyProtection: os-keychain` using a fresh isolated profile (`artifacts/packaged-smoke/`). No installer was installed.
+
 ## Native Windows results
 
 Host: **Microsoft Windows 11 Home x64 10.0.26300**. Development Node 26.8.2, pnpm 10.33.4, Electron 44.7.0 (its Node 24.21.0, Chromium 152.0.7977.130). Git 2.55.0.windows.3, TypeScript 5.9.3, Playwright 1.64.0. All mandatory build/runtime prerequisites are available. Signing credentials and live-provider accounts were not provisioned or used.
