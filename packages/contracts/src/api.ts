@@ -37,6 +37,17 @@ export const RunRequestSchema = z.object({
 });
 export type RunRequest = z.infer<typeof RunRequestSchema>;
 
+/** Explicit sample input for an isolated, recorded node execution. */
+export const NodeTestRequestSchema = z.object({
+  items: z
+    .array(z.object({ json: z.record(z.string(), z.unknown()) }))
+    .min(1)
+    .max(1000),
+  inputPort: z.string().max(100).optional(),
+  baseRevision: z.number().int().min(0),
+});
+export type NodeTestRequest = z.infer<typeof NodeTestRequestSchema>;
+
 export const CredentialCreateSchema = z.object({
   name: z.string().min(1).max(200),
   type: z.string().min(1).max(64),

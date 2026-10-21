@@ -4,6 +4,7 @@ import {
   ENGINE_VERSION,
   PermissionGrantsSchema,
   RunRequestSchema,
+  NodeTestRequestSchema,
   TERMINAL_EXECUTION_STATES,
   WorkflowCreateSchema,
   WorkflowGraphSchema,
@@ -181,6 +182,11 @@ export function registerApi(app: FastifyInstance, ctx: HostContext): void {
   );
   app.post('/api/workflows/:id/activate', async (req) => ctx.workflows.activate(params(req).id, actor(req)));
   app.post('/api/workflows/:id/deactivate', async (req) => ctx.workflows.deactivate(params(req).id, actor(req)));
+  app.post('/api/workflows/:id/nodes/:nodeId/test', async (req) => {
+    const p = z.object({ id: z.string().min(1).max(100), nodeId: z.string().min(1).max(100) }).parse(req.params);
+    const rec = ctx.workflows.testNode(p.id, p.nodeId, body(NodeTestRequestSchema, req), actor(req));
+    return { executionId: rec.id, state: rec.state };
+  });
   app.get('/api/workflows/:id/versions', async (req) => ctx.workflows.versions(params(req).id));
   app.get('/api/workflows/:id/versions/:versionId', async (req) => {
     const p = z.object({ id: z.string(), versionId: z.string() }).parse(req.params);

@@ -1,5 +1,6 @@
 import type { TemplateManifest } from '@pulseflow/contracts';
 import { chain, edge, node, t, X, Y } from './builders';
+import { B09 } from './social-demo';
 
 /**
  * Tier B templates talk to third-party services. Each one has two clearly separate modes:
@@ -474,7 +475,7 @@ export const B07 = t({
   },
 });
 
-export const TIER_B: TemplateManifest[] = [B01, B02, B03, B04, B05, B06, B07];
+export const TIER_B: TemplateManifest[] = [B01, B02, B03, B04, B05, B06, B07, B09];
 
 /** Catalog entries that are designed but not implemented. They are shown as "Planned" and cannot be instantiated. */
 export interface PlannedTemplate {

@@ -110,6 +110,29 @@ function fakeOllama(prompt: string): string {
 }
 
 export function registerFixtures(app: FastifyInstance, state: FixtureState, baseUrl: () => string): void {
+  const previews: { demo: true; published: false; status: string; receiptId: string; content: string }[] = [];
+  app.get('/demo/social/posts', async () => ({
+    notice: DEMO_NOTICE,
+    posts: [
+      { content: 'Sample: Build your first local automation.', approved: true },
+      { content: 'Sample: A draft awaiting review.', approved: false },
+      { content: 'Sample: Keep your workflow data on your computer.', approved: true },
+    ],
+  }));
+  app.post<{ Body: { content?: unknown; approved?: unknown } }>('/demo/social/preview', async (req, reply) => {
+    if (req.body?.approved !== true || typeof req.body.content !== 'string' || !req.body.content.trim() || req.body.content.length > 2000)
+      return reply.code(422).send({ error: 'An approved sample with non-empty content is required', demo: true, published: false });
+    const receipt = {
+      demo: true as const,
+      published: false as const,
+      status: 'local-preview-only',
+      receiptId: `demo-${previews.length + 1}`,
+      content: req.body.content,
+    };
+    if (previews.length >= 1000) previews.shift();
+    previews.push(receipt);
+    return receipt;
+  });
   app.get('/demo', async () => ({
     notice: DEMO_NOTICE,
     endpoints: ['monitor', 'feed.xml', 'api/health', 'api/slow', 'api/error', 'flaky', 'github', 'discord', 'telegram', 'sheets', 'ollama', 'smtp'],

@@ -12,6 +12,7 @@ import {
   type Item,
   type PermissionGrants,
   type RunRequest,
+  type NodeTestRequest,
   type TemplateManifest,
   type ValidationResult,
   type VariableValue,
@@ -282,6 +283,52 @@ export class WorkflowService {
     return rec;
   }
 
+  /** Runs only the selected saved node, with explicit input, through the normal durable engine. */
+  testNode(id: string, nodeId: string, req: NodeTestRequest, actor: string): ExecutionRecord {
+    const wf = this.get(id);
+    if (wf.draftRevision !== req.baseRevision) throw new HttpError(409, 'REVISION_CONFLICT', 'Save and reload the latest draft before testing this node');
+    const selected = wf.draft.nodes.find((n) => n.id === nodeId);
+    if (!selected) throw new HttpError(404, 'NOT_FOUND', 'Node not found in this draft');
+    const manifest = this.deps.registry.get(selected.type)?.manifest;
+    if (!manifest) throw new HttpError(422, 'UNKNOWN_NODE_TYPE', 'This node type is unavailable');
+    if (selected.disabled) throw new HttpError(422, 'NODE_DISABLED', 'Enable this node before testing it');
+    const inputPort = req.inputPort ?? manifest.inputs[0]?.name;
+    if (!manifest.trigger && !manifest.inputs.some((p) => p.name === inputPort))
+      throw new HttpError(400, 'INVALID_INPUT_PORT', 'Select an input port supported by this node');
+    const triggerId = manifest.trigger ? selected.id : newId('test');
+    const graph: WorkflowGraph = manifest.trigger
+      ? { schemaVersion: 1, nodes: [selected], edges: [] }
+      : {
+          schemaVersion: 1,
+          nodes: [
+            {
+              id: triggerId,
+              type: MANUAL_TRIGGER,
+              typeVersion: 1,
+              name: selected.name === 'Node test input' ? 'Test input' : 'Node test input',
+              position: { x: 0, y: 0 },
+              parameters: {},
+            },
+            selected,
+          ],
+          edges: [{ id: newId('edge'), source: triggerId, sourcePort: 'main', target: selected.id, targetPort: inputPort! }],
+        };
+    const result = this.validate(graph);
+    if (!result.ok) throw new HttpError(422, 'WORKFLOW_INVALID', 'Fix this node’s validation errors before testing', result.issues);
+    const rec = this.deps.executions.enqueue({
+      workflowId: wf.id,
+      workflowName: wf.name,
+      versionId: null,
+      graph,
+      settings: wf.settings,
+      triggerNodeId: triggerId,
+      items: req.items,
+      mode: 'test',
+    });
+    this.deps.store.audit.record(actor, 'workflow.node.test', id, { nodeId, executionId: rec.id, revision: wf.draftRevision });
+    return rec;
+  }
+
   /** Bundles never contain credential values, credential references, or permission grants. */
   exportBundle(ids: string[]): WorkflowBundle {
     const secrets = this.deps.credentials.allSecretValues();
@@ -361,6 +408,8 @@ export class WorkflowService {
   instantiateTemplate(idOrSlug: string, opts: InstantiateOptions, actor: string): { workflow: Workflow; templateDir: string; template: TemplateManifest } {
     const tpl = getTemplate(idOrSlug);
     if (!tpl) throw new HttpError(404, 'NOT_FOUND', 'Template not found');
+    if (tpl.demoOnly && opts.demo !== true)
+      throw new HttpError(400, 'DEMO_ONLY', 'This template only supports local demo execution; live publishing is unavailable');
     if (opts.demo && !tpl.demoOverrides && tpl.tier === 'B') throw new HttpError(400, 'NO_DEMO', 'This template has no demo mode');
     const folder = `${tpl.id.toLowerCase()}-${tpl.slug}-${newId('t').slice(-6).toLowerCase()}`;
     const templateDir = path.join(this.deps.app.demoDir, 'templates', sanitizeFileName(folder));
@@ -400,7 +449,9 @@ export class WorkflowService {
     });
     const workflow = this.create(
       {
-        name: opts.name ?? `${tpl.workflow.name}${opts.demo && tpl.tier === 'B' ? ' (demo)' : ''}`,
+        name: tpl.demoOnly
+          ? `${opts.name ?? tpl.workflow.name} (demo)`
+          : (opts.name ?? `${tpl.workflow.name}${opts.demo && tpl.tier === 'B' ? ' (demo)' : ''}`),
         description: tpl.workflow.description,
         tags: [...tpl.tags, ...(opts.demo && tpl.tier === 'B' ? ['demo'] : [])],
         draft: tpl.workflow.graph,

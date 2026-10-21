@@ -34,6 +34,8 @@ export const TemplateManifestSchema = z.object({
   liveRequirements: z.string().optional(),
   /** Tier B only: variable overrides applied for the clearly separate "Try demo" mode. */
   demoOverrides: z.record(z.string(), VariableValueSchema).optional(),
+  /** No live provider implementation is offered for this template. */
+  demoOnly: z.boolean().optional(),
   requiredCredentials: z.array(z.object({ type: z.string(), label: z.string() })).default([]),
   sample: z.object({ input: z.unknown(), output: z.string() }),
   docs: z.string(),

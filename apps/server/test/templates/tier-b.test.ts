@@ -136,4 +136,21 @@ describe('Tier B templates — live mode without credentials fails truthfully', 
     const wf = await host.api<{ settings: { variables: Record<string, string> } }>('GET', `/api/workflows/${workflowId}`);
     expect(wf.body.settings.variables.apiBaseUrl).toBe('https://api.github.com');
   });
+
+  it('B09 creates local preview receipts, excludes unapproved samples, and rejects live mode', async () => {
+    const r = await runTemplate(host, 'B09', { demo: true });
+    expect(r.execution.state, stepSummary(r.steps)).toBe('succeeded');
+    const report = JSON.parse(r.file('social-demo-receipts.json')) as {
+      count: number;
+      previews: { demo: boolean; published: boolean; content: string; status: string }[];
+    };
+    expect(report.count).toBe(2);
+    expect(report.previews).toHaveLength(2);
+    for (const preview of report.previews) expect(preview).toMatchObject({ demo: true, published: false, status: 'local-preview-only' });
+    expect(JSON.stringify(report)).not.toContain('awaiting review');
+    expect(r.step('log')?.logs.some((l) => l.message.includes('No social media posts were published'))).toBe(true);
+    const live = await host.api<{ error: { code: string } }>('POST', '/api/templates/B09/instantiate', { demo: false });
+    expect(live.status).toBe(400);
+    expect(live.body.error.code).toBe('DEMO_ONLY');
+  });
 });
