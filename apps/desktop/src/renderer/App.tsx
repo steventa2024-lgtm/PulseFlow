@@ -1,10 +1,23 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bell, Command, KeyRound, LayoutTemplate, ListChecks, Play, Plus, Settings, Workflow as WorkflowIcon } from 'lucide-react';
+import {
+  Bell,
+  Command,
+  KeyRound,
+  LayoutTemplate,
+  ListChecks,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Play,
+  Plus,
+  Settings,
+  Workflow as WorkflowIcon,
+} from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { EditorPage } from './editor/Editor';
 import { api, bridge, hasToken, setSessionToken, subscribeEvents } from './lib/api';
 import { dispatchEngineEvent, useLive } from './lib/events';
 import { relativeTime } from './lib/format';
+import { useMediaQuery } from './lib/panels';
 import { match, navigate, useRoute } from './lib/router';
 import { CredentialsPage } from './pages/Credentials';
 import { ExecutionsPage } from './pages/Executions';
@@ -127,6 +140,10 @@ function Shell() {
   const live = useLive();
   const [palette, setPalette] = useState(false);
   const [bell, setBell] = useState(false);
+  const compact = useMediaQuery('(max-width: 1199px)');
+  const [sidebarPreference, setSidebarPreference] = useState<boolean | null>(null);
+  const expanded = sidebarPreference ?? !compact;
+  const workflows = useQuery({ queryKey: ['workflows', ''], queryFn: () => api.workflows(), refetchInterval: 15_000 });
   const notifications = useQuery({ queryKey: ['notifications'], queryFn: api.notifications, refetchInterval: 30_000 });
   const unread = notifications.data?.filter((n) => !n.read).length ?? 0;
 
@@ -170,9 +187,15 @@ function Shell() {
 
   return (
     <div className="flex h-full" data-testid="app-ready">
-      <nav className="flex w-14 shrink-0 flex-col items-center gap-1 border-r border-line bg-panel py-3" aria-label="Main">
-        <button type="button" onClick={() => navigate('/')} className="mb-3" title="PulseFlow">
+      <nav className="studio-sidebar" data-expanded={expanded} aria-label="Main">
+        <button type="button" onClick={() => navigate('/')} className="sidebar-brand" title="PulseFlow">
           <img src="./favicon.png" alt="PulseFlow" className="h-8 w-8" />
+          {expanded ? (
+            <span className="text-left">
+              <span className="block text-[17px] font-semibold tracking-tight">PulseFlow</span>
+              <span className="block text-[9px] tracking-[0.2em] text-faint uppercase">ZeroPulse Studio</span>
+            </span>
+          ) : null}
         </button>
         {NAV.map((n) => (
           <button
@@ -184,25 +207,75 @@ function Shell() {
             data-testid={`nav-${n.label.toLowerCase()}`}
             onClick={() => navigate(n.path)}
             className={cx(
-              'relative flex h-10 w-10 items-center justify-center rounded-xl transition-colors',
+              'sidebar-link relative flex h-10 items-center rounded-lg transition-colors',
               activePath === n.path ? 'bg-accent/15 text-accent' : 'text-faint hover:bg-hover hover:text-ink',
             )}
           >
             {activePath === n.path ? <span className="absolute top-2 bottom-2 -left-2 w-0.5 rounded bg-accent" /> : null}
             <n.icon size={18} strokeWidth={1.8} />
+            {expanded ? <span>{n.label}</span> : null}
           </button>
         ))}
-        <div className="flex-1" />
+        {expanded ? (
+          <div className="workflow-switcher min-h-0 flex-1 overflow-y-auto">
+            <div className="mb-2 flex items-center justify-between px-2 text-[10px] font-semibold tracking-[0.12em] text-faint uppercase">
+              Your workflows
+              <button
+                type="button"
+                aria-label="Create workflow"
+                title="Create workflow"
+                className="rounded p-1 hover:bg-hover hover:text-ink"
+                onClick={() => {
+                  void api
+                    .createWorkflow({ name: 'Untitled workflow' })
+                    .then((w) => {
+                      void qc.invalidateQueries({ queryKey: ['workflows'] });
+                      navigate(`/workflows/${w.id}`);
+                    })
+                    .catch((e) => toast.error('Could not create workflow', e));
+                }}
+              >
+                <Plus size={15} />
+              </button>
+            </div>
+            {workflows.isError ? <div className="px-2 text-xs text-bad">Could not load workflows</div> : null}
+            {workflows.data?.length === 0 ? <p className="px-2 text-xs leading-relaxed text-faint">Create a workflow or start with a template.</p> : null}
+            {workflows.data?.map((w) => (
+              <button
+                key={w.id}
+                type="button"
+                aria-current={wfMatch?.id === w.id ? 'location' : undefined}
+                onClick={() => navigate(`/workflows/${w.id}`)}
+                className={cx(
+                  'mb-1 flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-xs',
+                  wfMatch?.id === w.id ? 'bg-accent/10 text-ink' : 'text-muted hover:bg-hover',
+                )}
+                title={w.name}
+              >
+                <span className={cx('h-1.5 w-1.5 shrink-0 rounded-full', w.active ? 'bg-ok' : 'bg-faint/60')} />
+                <span className="truncate">{w.name}</span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="flex-1" />
+        )}
         <button
           type="button"
           title="Command palette (Ctrl+K)"
           aria-label="Command palette"
           onClick={() => setPalette(true)}
-          className="flex h-10 w-10 items-center justify-center rounded-xl text-faint hover:bg-hover hover:text-ink"
+          className="sidebar-link flex h-10 items-center rounded-lg text-muted hover:bg-hover hover:text-ink"
         >
           <Command size={17} />
+          {expanded ? (
+            <>
+              <span className="flex-1 text-left">Quick search</span>
+              <kbd className="text-[10px] text-faint">Ctrl K</kbd>
+            </>
+          ) : null}
         </button>
-        <div className="relative">
+        <div className="relative w-full">
           <button
             type="button"
             title="Notifications"
@@ -211,9 +284,10 @@ function Shell() {
               setBell((v) => !v);
               if (unread) void api.markNotificationsRead().then(() => qc.invalidateQueries({ queryKey: ['notifications'] }));
             }}
-            className="relative flex h-10 w-10 items-center justify-center rounded-xl text-faint hover:bg-hover hover:text-ink"
+            className="sidebar-link relative flex h-10 items-center rounded-lg text-muted hover:bg-hover hover:text-ink"
           >
             <Bell size={17} />
+            {expanded ? <span>Notifications</span> : null}
             {unread ? <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-accent" /> : null}
           </button>
           {bell ? (
@@ -242,10 +316,22 @@ function Shell() {
             </div>
           ) : null}
         </div>
-        <span
-          className={cx('mt-2 h-2 w-2 rounded-full', live.connected ? 'bg-ok' : 'bg-bad')}
-          title={live.connected ? 'Live updates connected' : 'Live updates disconnected — retrying'}
-        />
+        <div className="sidebar-connection flex w-full items-center gap-2 border-t border-line pt-3 text-[11px] text-muted">
+          <span
+            className={cx('h-1.5 w-1.5 shrink-0 rounded-full', live.connected ? 'bg-ok' : 'bg-bad')}
+            title={live.connected ? 'Engine connected' : 'Reconnecting to engine'}
+          />
+          {expanded ? <span className="flex-1">{live.connected ? 'Local engine connected' : 'Reconnecting…'}</span> : null}
+          <button
+            type="button"
+            aria-label={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
+            aria-expanded={expanded}
+            onClick={() => setSidebarPreference(!expanded)}
+            className="rounded p-1.5 text-faint hover:bg-hover hover:text-ink"
+          >
+            {expanded ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
+          </button>
+        </div>
       </nav>
       <main className="flex min-w-0 flex-1 flex-col">{page}</main>
       {palette ? <CommandPalette onClose={() => setPalette(false)} /> : null}

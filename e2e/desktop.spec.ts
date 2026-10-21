@@ -56,6 +56,7 @@ test('build a workflow from scratch on the canvas, run it, and see item data', a
   await page.getByTestId('empty-canvas').getByRole('button', { name: 'Manual Trigger' }).click();
   await expect(page.getByTestId('node-Manual Trigger')).toBeVisible();
 
+  await page.getByTestId('add-node').click();
   await page.getByTestId('library-search').fill('set fields');
   await page.getByTestId('library-item-core.set').click();
   await expect(page.getByTestId('node-Set Fields')).toBeVisible();
@@ -91,7 +92,7 @@ test('connected template demo mode talks only to the local fixture server', asyn
   await expect(page.getByTestId('editor')).toBeVisible();
   await page.getByTestId('run').click();
   await expect(page.getByTestId('execution-header')).toHaveAttribute('data-state', 'succeeded', { timeout: 30_000 });
-  await page.getByRole('tab', { name: /Logs/ }).click();
+  await page.getByTestId('console').getByRole('tab', { name: /Logs/ }).click();
   await expect(page.getByTestId('logs')).toContainText('release-digest.md');
   await page
     .getByTestId('canvas')

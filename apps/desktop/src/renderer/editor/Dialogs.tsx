@@ -4,7 +4,8 @@ import { FolderOpen, History, Plus, ShieldAlert, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { api, bridge } from '../lib/api';
 import { dateTime, relativeTime } from '../lib/format';
-import { Badge, Button, IconButton, Input, Modal, Select, Switch, toast } from '../components/ui';
+import { Badge, Button, IconButton, Input, Label, Modal, Select, Switch, TextArea, toast } from '../components/ui';
+import { compareVersions } from './comparison';
 import { useEditor } from './store';
 
 export function requiredPermissions(): Set<string> {
@@ -55,9 +56,9 @@ export function PermissionsDialog({
   const save = async () => {
     try {
       const wf = await api.setPermissions(workflow.id, grants);
+      onClose();
       onSaved(wf);
       toast.ok('Permissions saved');
-      onClose();
     } catch (e) {
       toast.error('Could not save permissions', e);
     }
@@ -200,12 +201,19 @@ export function VersionsDialog({ open, onClose, onRestored }: { open: boolean; o
   const workflow = useEditor((s) => s.workflow);
   const qc = useQueryClient();
   const versions = useQuery({ queryKey: ['versions', workflow?.id], queryFn: () => api.versions(workflow!.id), enabled: open && !!workflow });
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('draft');
+  const draft = useEditor();
+  const current = { graph: draft.graph(), settings: draft.settings };
   if (!workflow) return null;
+  const source = versions.data?.find((v) => v.id === (from || workflow.publishedVersionId || versions.data[0]?.id));
+  const target = to === 'draft' ? (current.settings ? { graph: current.graph, settings: current.settings } : null) : versions.data?.find((v) => v.id === to);
+  const changes = source && target ? compareVersions(source, target) : [];
   return (
     <Modal
       open={open}
       onClose={onClose}
-      width={600}
+      width={780}
       testId="versions-dialog"
       title={
         <span className="flex items-center gap-2">
@@ -213,10 +221,58 @@ export function VersionsDialog({ open, onClose, onRestored }: { open: boolean; o
         </span>
       }
     >
-      {!versions.data?.length ? (
+      {versions.isError ? (
+        <p role="alert" className="text-xs text-bad">
+          Could not load version history. Close and try again.
+        </p>
+      ) : versions.isPending ? (
+        <p className="text-xs text-muted">Loading version history…</p>
+      ) : !versions.data?.length ? (
         <div className="py-8 text-center text-xs text-muted">No versions yet. Publishing creates an immutable version that triggers run.</div>
       ) : (
-        <div className="space-y-1.5">
+        <div className="space-y-4">
+          <div className="rounded-xl border border-line bg-bg/50 p-3" data-testid="version-comparison">
+            <div className="mb-3 text-xs font-semibold">Compare versions</div>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="text-xs text-muted">
+                From
+                <Select aria-label="Compare from" value={source?.id ?? ''} onChange={(e) => setFrom(e.target.value)} className="mt-1">
+                  {versions.data.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      v{v.versionNumber} · {v.note || 'Published'}
+                    </option>
+                  ))}
+                </Select>
+              </label>
+              <label className="text-xs text-muted">
+                To
+                <Select aria-label="Compare to" value={to} onChange={(e) => setTo(e.target.value)} className="mt-1">
+                  <option value="draft">Current draft (includes unsaved edits)</option>
+                  {versions.data.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      v{v.versionNumber}
+                    </option>
+                  ))}
+                </Select>
+              </label>
+            </div>
+            <div className="mt-3 max-h-52 space-y-1 overflow-y-auto text-xs" aria-live="polite">
+              {changes.length ? (
+                changes.map((c, i) => (
+                  <div key={i} className="flex items-start gap-2 rounded-lg bg-raised px-2 py-1.5">
+                    <Badge tone={c.kind === 'Added' ? 'ok' : c.kind === 'Removed' ? 'bad' : 'violet'}>{c.kind}</Badge>
+                    <span className="min-w-0 break-words">
+                      {c.area}: {c.name}
+                      {c.fields?.length ? <span className="text-faint"> · {c.fields.join(', ')}</span> : null}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-muted">No differences in nodes, connections or execution settings.</p>
+              )}
+            </div>
+            <p className="mt-2 text-[11px] text-faint">Changed fields are listed without revealing stored values. Permission grants are reviewed separately.</p>
+          </div>
           {versions.data.map((v) => (
             <div key={v.id} className="flex items-center gap-3 rounded-lg border border-line bg-bg/50 px-3 py-2.5">
               <div className="w-10 text-[13px] font-semibold">v{v.versionNumber}</div>
@@ -254,13 +310,23 @@ export function VersionsDialog({ open, onClose, onRestored }: { open: boolean; o
   );
 }
 
-export function PublishDialog({ open, onClose, onPublish }: { open: boolean; onClose: () => void; onPublish: (note: string) => void }) {
+export function PublishDialog({
+  open,
+  onClose,
+  onPublish,
+  deploy = false,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onPublish: (note: string) => void;
+  deploy?: boolean;
+}) {
   const [note, setNote] = useState('');
   return (
     <Modal
       open={open}
       onClose={onClose}
-      title="Publish a new version"
+      title={deploy ? 'Deploy locally' : 'Publish a new version'}
       width={480}
       footer={
         <>
@@ -268,19 +334,112 @@ export function PublishDialog({ open, onClose, onPublish }: { open: boolean; onC
             Cancel
           </Button>
           <Button variant="primary" data-testid="publish-confirm" onClick={() => (onPublish(note), setNote(''))}>
-            Publish
+            {deploy ? 'Deploy locally' : 'Publish'}
           </Button>
         </>
       }
     >
-      <p className="mb-3 text-xs text-muted">Active triggers always run the published version. Your draft stays editable.</p>
+      <p className="mb-3 text-xs leading-relaxed text-muted">
+        {deploy
+          ? 'Validate and save an immutable version, then activate its triggers on this computer. Schedules, webhooks and file watchers may start executing immediately. This is local deployment.'
+          : 'Active triggers always run the published version. Your draft stays editable.'}
+      </p>
       <Input
         autoFocus
         value={note}
         onChange={(e) => setNote(e.target.value)}
         placeholder="What changed? (optional)"
+        aria-label="Version note"
         onKeyDown={(e) => e.key === 'Enter' && onPublish(note)}
       />
+    </Modal>
+  );
+}
+
+export function NodeTestDialog({
+  nodeId,
+  open,
+  onClose,
+  onTest,
+}: {
+  nodeId: string;
+  open: boolean;
+  onClose: () => void;
+  onTest: (items: { json: Record<string, unknown> }[], inputPort?: string) => void;
+}) {
+  const node = useEditor((s) => s.nodes.find((n) => n.id === nodeId)?.data.instance);
+  const entry = useEditor((s) => (node ? s.catalog.get(node.type) : undefined));
+  const [input, setInput] = useState('[\n  { "json": {} }\n]');
+  const [port, setPort] = useState('');
+  const [error, setError] = useState('');
+  if (!node || !entry) return null;
+  const submit = () => {
+    try {
+      const parsed: unknown = JSON.parse(input);
+      if (
+        !Array.isArray(parsed) ||
+        !parsed.length ||
+        parsed.length > 1000 ||
+        parsed.some((v) => !v || typeof v !== 'object' || !v.json || typeof v.json !== 'object' || Array.isArray(v.json))
+      )
+        throw new Error('Enter 1–1,000 items shaped as { "json": { ... } }.');
+      onTest(parsed as { json: Record<string, unknown> }[], port || entry.inputs[0]?.name);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={`Test node · ${node.name}`}
+      testId="node-test-dialog"
+      width={560}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={submit} data-testid="node-test-confirm">
+            Execute node
+          </Button>
+        </>
+      }
+    >
+      <p className="mb-3 text-xs leading-relaxed text-muted">
+        Executes this node with the sample input below and records a test execution. Upstream and downstream nodes are excluded; references to their outputs
+        will be unavailable. Existing permissions still apply.
+      </p>
+      <div className="mb-4 rounded-lg border border-warn/30 bg-warn/10 p-3 text-xs text-warn">
+        {entry.sideEffects || 'This is a real execution. Configured file, network, notification or other side effects can occur.'}
+      </div>
+      {entry.inputs.length > 1 ? (
+        <label className="mb-3 block text-xs text-muted">
+          Input port
+          <Select className="mt-1" value={port || entry.inputs[0]?.name} onChange={(e) => setPort(e.target.value)}>
+            {entry.inputs.map((p) => (
+              <option key={p.name} value={p.name}>
+                {p.label || p.name}
+              </option>
+            ))}
+          </Select>
+        </label>
+      ) : null}
+      <Label>Sample items (JSON)</Label>
+      <TextArea
+        aria-label="Node test input"
+        className="min-h-44"
+        value={input}
+        onChange={(e) => {
+          setInput(e.target.value);
+          setError('');
+        }}
+      />
+      {error ? (
+        <p role="alert" className="mt-2 text-xs text-bad">
+          {error}
+        </p>
+      ) : null}
     </Modal>
   );
 }

@@ -108,7 +108,7 @@ export const useEditor = create<EditorState>((set, get) => {
     executionId: null,
     runStates: {},
     consoleTab: 'timeline',
-    consoleOpen: true,
+    consoleOpen: false,
     ioNodeId: null,
 
     load: (wf) =>

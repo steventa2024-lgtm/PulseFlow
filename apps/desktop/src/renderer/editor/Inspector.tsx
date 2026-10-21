@@ -1,36 +1,94 @@
 import type { CredentialMeta, NodeCatalogEntry, NodeInstance, ValidationIssue, VariableValue } from '@pulseflow/contracts';
 import { useQuery } from '@tanstack/react-query';
-import { Copy, Plus, RefreshCw, ShieldCheck, Trash2 } from 'lucide-react';
+import { Copy, FlaskConical, Plus, RefreshCw, ShieldCheck, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { api, type TriggerStatus } from '../lib/api';
 import { relativeTime } from '../lib/format';
+import { useDialogFocus, useMediaQuery } from '../lib/panels';
 import { CATEGORY_COLORS, NodeIcon } from '../lib/icons';
 import { Badge, Button, IconButton, Input, Label, Select, Switch, Tabs, TextArea, toast } from '../components/ui';
 import { isParamVisible, ParamField } from './ParamField';
 import { useEditor } from './store';
 
-export function Inspector({ issues, onReviewPermissions }: { issues: ValidationIssue[]; onReviewPermissions: () => void }) {
+export function Inspector({
+  issues,
+  onReviewPermissions,
+  open,
+  onClose,
+  onTestNode,
+  testing,
+}: {
+  issues: ValidationIssue[];
+  onReviewPermissions: () => void;
+  open: boolean;
+  onClose: () => void;
+  onTestNode: (id: string) => void;
+  testing: boolean;
+}) {
   const selected = useEditor(useShallow((s) => s.nodes.filter((n) => n.selected)));
   const credentials = useQuery({ queryKey: ['credentials'], queryFn: api.credentials });
   const node = selected.length === 1 ? selected[0]!.data.instance : null;
+  const drawer = useMediaQuery('(max-width: 1279px)');
+  const ref = useDialogFocus(drawer && open, onClose);
+  if (drawer && !open) return null;
   return (
-    <aside className="flex w-[340px] shrink-0 flex-col border-l border-line bg-panel" aria-label="Inspector" data-testid="inspector">
-      {node ? (
-        <NodeInspector key={node.id} node={node} credentials={credentials.data ?? []} issues={issues.filter((i) => i.nodeId === node.id)} />
-      ) : selected.length > 1 ? (
-        <div className="p-4 text-xs text-muted">{selected.length} nodes selected. Press Delete to remove, Ctrl+D to duplicate.</div>
-      ) : (
-        <WorkflowInspector onReviewPermissions={onReviewPermissions} />
-      )}
-    </aside>
+    <>
+      {drawer ? <div className="absolute inset-0 z-20 bg-black/50" onClick={onClose} /> : null}
+      <div
+        ref={ref}
+        role={drawer ? 'dialog' : 'complementary'}
+        aria-modal={drawer ? true : undefined}
+        className={drawer ? 'inspector-panel inspector-drawer' : 'inspector-panel'}
+        aria-label={drawer ? 'Node Configuration drawer' : 'Node Configuration'}
+        data-testid="inspector"
+      >
+        <div className="flex h-11 shrink-0 items-center justify-between border-b border-line px-4">
+          <span className="text-[10px] font-semibold tracking-[0.14em] text-faint uppercase">{node ? 'Node Configuration' : 'Workflow Configuration'}</span>
+          {drawer ? (
+            <IconButton label="Close configuration" onClick={onClose}>
+              <X size={15} />
+            </IconButton>
+          ) : (
+            <ShieldCheck size={14} className="text-faint" />
+          )}
+        </div>
+        {node ? (
+          <NodeInspector
+            key={node.id}
+            node={node}
+            credentials={credentials.data ?? []}
+            issues={issues.filter((i) => i.nodeId === node.id)}
+            onTest={() => onTestNode(node.id)}
+            testing={testing}
+          />
+        ) : selected.length > 1 ? (
+          <div className="p-4 text-xs text-muted">{selected.length} nodes selected. Press Delete to remove, Ctrl+D to duplicate.</div>
+        ) : (
+          <WorkflowInspector onReviewPermissions={onReviewPermissions} />
+        )}
+      </div>
+    </>
   );
 }
 
-function NodeInspector({ node, credentials, issues }: { node: NodeInstance; credentials: CredentialMeta[]; issues: ValidationIssue[] }) {
+function NodeInspector({
+  node,
+  credentials,
+  issues,
+  onTest,
+  testing,
+}: {
+  node: NodeInstance;
+  credentials: CredentialMeta[];
+  issues: ValidationIssue[];
+  onTest: () => void;
+  testing: boolean;
+}) {
   const entry = useEditor((s) => s.catalog.get(node.type));
   const { updateNode, setParam } = useEditor.getState();
   const [tab, setTab] = useState<'params' | 'settings' | 'info'>('params');
+  const result = useEditor((s) => s.runStates[node.id]);
   if (!entry) return <div className="p-4 text-xs text-bad">Unknown node type “{node.type}”. It may come from a newer PulseFlow version.</div>;
   const color = CATEGORY_COLORS[entry.category] ?? '#3b82f6';
   const paramIssue = (name: string) => issues.find((i) => i.param === name)?.message;
@@ -131,6 +189,24 @@ function NodeInspector({ node, credentials, issues }: { node: NodeInstance; cred
             </div>
           </div>
         ) : null}
+      </div>
+      <div className="shrink-0 space-y-2 border-t border-line p-4">
+        {result ? (
+          <p className="text-xs text-muted" data-testid="node-test-outcome">
+            Last recorded step: <span className={result.error ? 'text-bad' : 'text-ink'}>{result.state}</span>
+            {result.error ? ` · ${result.error}` : ''}
+          </p>
+        ) : null}
+        <Button
+          className="w-full justify-center"
+          icon={<FlaskConical size={14} />}
+          onClick={onTest}
+          disabled={testing || !!node.disabled || !entry.enabled}
+          data-testid="test-node"
+        >
+          {testing ? 'Starting test…' : 'Test Node'}
+        </Button>
+        <p className="text-[11px] leading-relaxed text-faint">Execute this node with sample input. Results are recorded in execution history.</p>
       </div>
     </>
   );

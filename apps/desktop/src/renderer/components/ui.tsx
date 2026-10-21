@@ -1,15 +1,8 @@
 import { X } from 'lucide-react';
-import {
-  useEffect,
-  useRef,
-  type ButtonHTMLAttributes,
-  type InputHTMLAttributes,
-  type ReactNode,
-  type SelectHTMLAttributes,
-  type TextareaHTMLAttributes,
-} from 'react';
+import { useId, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 import { create } from 'zustand';
 import { stateStyle } from '../lib/format';
+import { useDialogFocus } from '../lib/panels';
 
 export const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ');
 
@@ -172,14 +165,8 @@ export function Modal({
   width?: number;
   testId?: string;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    ref.current?.querySelector<HTMLElement>('input,select,textarea,button')?.focus();
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
+  const ref = useDialogFocus(open, onClose);
+  const titleId = useId();
   if (!open) return null;
   return (
     <div
@@ -190,12 +177,16 @@ export function Modal({
         ref={ref}
         role="dialog"
         aria-modal="true"
+        aria-labelledby={titleId}
+        aria-label={typeof title === 'string' ? title : undefined}
         data-testid={testId}
         className="flex max-h-[88vh] w-full flex-col rounded-2xl border border-line bg-panel shadow-2xl"
         style={{ maxWidth: width }}
       >
         <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
-          <h2 className="text-[15px] font-semibold">{title}</h2>
+          <h2 id={titleId} className="text-[15px] font-semibold">
+            {title}
+          </h2>
           <IconButton label="Close" onClick={onClose}>
             <X size={16} />
           </IconButton>

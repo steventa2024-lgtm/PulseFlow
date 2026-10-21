@@ -65,7 +65,7 @@ export function TemplatesPage() {
               <div className="mb-2 flex items-center gap-1.5">
                 <Badge tone={t.tier === 'A' ? 'ok' : 'accent'}>
                   {t.tier === 'A' ? <WifiOff size={10} /> : <Plug size={10} />}
-                  {t.tier === 'A' ? 'Offline' : 'Connected'}
+                  {t.demoOnly ? 'Demo only' : t.tier === 'A' ? 'Offline' : 'Connected'}
                 </Badge>
                 <Badge>{t.category}</Badge>
                 <span className="ml-auto font-mono text-[11px] text-faint">{t.id}</span>
@@ -162,9 +162,11 @@ function TemplateDialog({ summary, onClose }: { summary: TemplateSummary; onClos
       {isB ? (
         <div className="mt-4 grid grid-cols-2 gap-2">
           <ModeCard active={demo} onClick={() => setDemo(true)} icon={<FlaskConical size={15} />} title="Try demo" disabled={!summary.demoOverrides}>
-            Runs against PulseFlow’s local fixture server with sample data. Nothing is sent to {summary.services.join(', ') || 'any service'}.
+            {summary.demoOnly
+              ? 'Creates local preview receipts with sample data. No real social media posts are published.'
+              : `Runs against PulseFlow’s local fixture server with sample data. Nothing is sent to ${summary.services.join(', ') || 'any service'}.`}
           </ModeCard>
-          <ModeCard active={!demo} onClick={() => setDemo(false)} icon={<Globe size={15} />} title="Run live">
+          <ModeCard active={!demo} onClick={() => setDemo(false)} icon={<Globe size={15} />} title="Run live" disabled={summary.demoOnly}>
             {summary.liveRequirements ?? 'Requires your own account and credentials.'}
           </ModeCard>
         </div>

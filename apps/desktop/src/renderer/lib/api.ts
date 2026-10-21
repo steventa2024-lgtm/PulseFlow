@@ -177,6 +177,8 @@ export const api = {
     id: string,
     b: { triggerNodeId?: string; payload?: Record<string, unknown>; useDraft?: boolean; pinned?: Record<string, { json: Record<string, unknown> }[]> } = {},
   ) => post<{ executionId: string; state: string }>(`/api/workflows/${id}/run`, b),
+  testNode: (id: string, nodeId: string, b: { items: { json: Record<string, unknown> }[]; inputPort?: string; baseRevision: number }) =>
+    post<{ executionId: string; state: string }>(`/api/workflows/${id}/nodes/${nodeId}/test`, b),
 
   executions: (q: { workflowId?: string; state?: string; search?: string; limit?: number; before?: string } = {}) =>
     get<Execution[]>(`/api/executions${qs(q)}`),

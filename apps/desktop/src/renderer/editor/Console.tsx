@@ -50,7 +50,7 @@ export function ExecutionConsole({ workflowId, onRetried }: { workflowId: string
 
   return (
     <section
-      className="flex shrink-0 flex-col border-t border-line bg-panel"
+      className="execution-console flex shrink-0 flex-col border-t border-line bg-panel"
       style={{ height: consoleOpen ? height : 40 }}
       aria-label="Execution console"
       data-testid="console"
@@ -66,7 +66,7 @@ export function ExecutionConsole({ workflowId, onRetried }: { workflowId: string
           onPointerUp={() => (drag.current = null)}
         />
       ) : null}
-      <div className="flex h-9 shrink-0 items-center gap-3 px-3">
+      <div className="console-toolbar flex min-h-10 shrink-0 flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1">
         <Tabs tabs={tabs} value={consoleTab} onChange={(t) => setConsole({ tab: t, open: true })} />
         <div className="flex-1" />
         {exec.data ? <ExecutionHeader exec={exec.data} onRetried={onRetried} /> : <span className="text-xs text-faint">No run selected</span>}
@@ -112,7 +112,7 @@ function ExecutionHeader({ exec, onRetried }: { exec: ExecutionDetail; onRetried
   return (
     <div className="flex items-center gap-2 text-xs" data-testid="execution-header" data-state={exec.state}>
       <StateBadge state={exec.state} />
-      <span className="text-faint">
+      <span className="execution-meta truncate text-faint" title={`${exec.mode} · ${exec.id}`}>
         {exec.mode} · {duration(executionDuration(exec))} · <span className="font-mono">{exec.id}</span>
       </span>
       {!terminal ? (

@@ -1,13 +1,13 @@
 import type { NodeCatalogEntry } from '@pulseflow/contracts';
-import { ChevronDown, Lock, Search } from 'lucide-react';
+import { ChevronDown, Lock, Search, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { Badge, cx } from '../components/ui';
+import { Badge, IconButton, cx } from '../components/ui';
 import { CATEGORY_COLORS, CATEGORY_LABELS, NodeIcon } from '../lib/icons';
 
 export const DRAG_MIME = 'application/x-pulseflow-node';
 const ORDER = ['trigger', 'logic', 'data', 'files', 'network', 'notify', 'ai', 'connector', 'developer'];
 
-export function Library({ catalog, onAdd }: { catalog: NodeCatalogEntry[]; onAdd: (entry: NodeCatalogEntry) => void }) {
+export function Library({ catalog, onAdd, onClose }: { catalog: NodeCatalogEntry[]; onAdd: (entry: NodeCatalogEntry) => void; onClose: () => void }) {
   const [q, setQ] = useState('');
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const groups = useMemo(() => {
@@ -19,16 +19,21 @@ export function Library({ catalog, onAdd }: { catalog: NodeCatalogEntry[]; onAdd
   }, [catalog, q]);
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r border-line bg-panel" aria-label="Node library">
+    <aside className="node-library" aria-label="Node library">
       <div className="border-b border-line p-3">
         <div className="mb-2 flex items-center justify-between">
           <span className="text-xs font-semibold tracking-wide text-muted uppercase">Library</span>
           <span className="text-[11px] text-faint">{catalog.length} nodes</span>
+          <IconButton label="Close node library" onClick={onClose}>
+            <X size={14} />
+          </IconButton>
         </div>
         <div className="relative">
           <Search size={14} className="absolute top-2 left-2.5 text-faint" />
           <input
             data-testid="library-search"
+            aria-label="Search nodes"
+            autoFocus
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search nodes…"
@@ -55,6 +60,7 @@ export function Library({ catalog, onAdd }: { catalog: NodeCatalogEntry[]; onAdd
                   <div
                     key={e.type}
                     role="button"
+                    aria-disabled={!e.enabled}
                     tabIndex={0}
                     draggable={e.enabled}
                     data-testid={`library-item-${e.type}`}
@@ -64,7 +70,12 @@ export function Library({ catalog, onAdd }: { catalog: NodeCatalogEntry[]; onAdd
                       ev.dataTransfer.effectAllowed = 'move';
                     }}
                     onClick={() => e.enabled && onAdd(e)}
-                    onKeyDown={(ev) => ev.key === 'Enter' && e.enabled && onAdd(e)}
+                    onKeyDown={(ev) => {
+                      if ((ev.key === 'Enter' || ev.key === ' ') && e.enabled) {
+                        ev.preventDefault();
+                        onAdd(e);
+                      }
+                    }}
                     className={cx(
                       'group flex cursor-grab items-start gap-2.5 rounded-lg px-2 py-1.5 hover:bg-hover',
                       !e.enabled && 'cursor-not-allowed opacity-50',
